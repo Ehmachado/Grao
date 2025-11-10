@@ -4,58 +4,235 @@
   <meta charset="UTF-8" />
   <title>Painel de Propostas - SUP BARREIRAS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- TailwindCSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- SheetJS local -->
   <script src="xlsx.full.min.js"></script>
-  <!-- html2canvas para exportar PNG -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     
     :root {
-      --agro-green: #5a6e2c;
-      --agro-green-dark: #4a5d23;
-      --agro-green-light: #6b7f3d;
-      --agro-beige: #f5f1e8;
-      --agro-cream: #faf8f3;
-      --agro-brown: #8b7355;
-      --agro-sage: #8a9a7e;
+      --primary: #0f766e;
+      --primary-dark: #0d5c54;
+      --primary-light: #14b8a6;
+      --secondary: #475569;
+      --secondary-light: #64748b;
+      --accent: #10b981;
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --border: #e2e8f0;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
     
     body {
-      background: linear-gradient(135deg, var(--agro-beige) 0%, var(--agro-cream) 50%, var(--agro-beige) 100%);
-      color: #2d2d2d;
-      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
     }
     
-    .glass {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(16px);
-      border: 2px solid var(--agro-green);
-      box-shadow: 0 4px 20px rgba(74, 93, 35, 0.15);
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       transition: all 0.3s ease;
-      border-radius: 16px;
     }
     
-    .glass:hover {
-      box-shadow: 0 8px 32px rgba(74, 93, 35, 0.25);
-      transform: translateY(-2px);
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+    
+    .btn-secondary {
+      background: white;
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-secondary:hover {
+      background: var(--bg-main);
+    }
+    
+    .input {
+      padding: 0.625rem 0.875rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+      background: white;
+      width: 100%;
+    }
+    
+    .input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
     }
     
     .badge {
-      border-radius: 999px;
-      padding: 0.3rem 0.85rem;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      font-weight: 700;
-      transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
+      gap: 0.375rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    .badge-success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .badge-warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .badge-info {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .badge-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    thead {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    thead th {
+      padding: 0.875rem 0.75rem;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: white;
+      white-space: nowrap;
+    }
+    
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s ease;
+    }
+    
+    tbody tr:hover {
+      background: var(--bg-main);
+    }
+    
+    tbody td {
+      padding: 0.75rem;
+      font-size: 0.875rem;
+      color: var(--text-primary);
+    }
+    
+    .stat-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--primary);
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1;
+      margin: 0.5rem 0;
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .filter-section {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    
+    .checkbox-group:hover {
+      background: var(--bg-main);
+    }
+    
+    .checkbox {
+      width: 1rem;
+      height: 1rem;
+      cursor: pointer;
     }
     
     .scrollbar-thin::-webkit-scrollbar {
@@ -64,684 +241,317 @@
     }
     
     .scrollbar-thin::-webkit-scrollbar-track {
-      background: rgba(245, 241, 232, 0.5);
-      border-radius: 10px;
+      background: var(--bg-main);
+      border-radius: 4px;
     }
     
     .scrollbar-thin::-webkit-scrollbar-thumb {
-      background: linear-gradient(135deg, var(--agro-green) 0%, var(--agro-green-light) 100%);
-      border-radius: 10px;
+      background: var(--secondary-light);
+      border-radius: 4px;
     }
     
-    .input-modern {
-      background: #ffffff;
-      border: 2px solid var(--agro-sage);
-      border-radius: 10px;
-      padding: 0.65rem 1rem;
-      color: #2d2d2d;
-      transition: all 0.3s ease;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-    
-    .input-modern:focus {
-      outline: none;
-      border-color: var(--agro-green);
-      box-shadow: 0 0 0 3px rgba(90, 110, 44, 0.15);
-    }
-    
-    .input-modern:hover {
-      border-color: var(--agro-green-light);
-    }
-    
-    .btn-primary {
-      background: linear-gradient(135deg, var(--agro-green) 0%, var(--agro-green-light) 100%);
-      color: white;
-      padding: 0.85rem 1.5rem;
-      border-radius: 10px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(90, 110, 44, 0.3);
-      border: none;
-      cursor: pointer;
-    }
-    
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(90, 110, 44, 0.4);
-      background: linear-gradient(135deg, var(--agro-green-dark) 0%, var(--agro-green) 100%);
-    }
-    
-    .btn-secondary {
-      background: #ffffff;
-      color: var(--agro-green-dark);
-      padding: 0.85rem 1.5rem;
-      border-radius: 10px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      transition: all 0.3s ease;
-      border: 2px solid var(--agro-green);
-      cursor: pointer;
-    }
-    
-    .btn-secondary:hover {
-      background: var(--agro-beige);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(90, 110, 44, 0.2);
-    }
-    
-    .stat-card {
-      background: linear-gradient(135deg, #ffffff 0%, var(--agro-cream) 100%);
-      border-radius: 14px;
-      padding: 1.5rem;
-      border: 2px solid var(--agro-sage);
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 5px;
-      height: 100%;
-      background: linear-gradient(180deg, var(--agro-green) 0%, var(--agro-green-light) 100%);
-    }
-    
-    .stat-card:hover {
-      border-color: var(--agro-green);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(90, 110, 44, 0.2);
-    }
-    
-    .table-modern {
-      border-collapse: separate;
-      border-spacing: 0;
-    }
-    
-    .table-modern thead {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: linear-gradient(135deg, var(--agro-green-dark) 0%, var(--agro-green) 100%);
-    }
-    
-    .table-modern thead th {
-      padding: 1rem 0.75rem;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      font-weight: 800;
-      color: #ffffff;
-      border-bottom: 3px solid var(--agro-green-light);
-    }
-    
-    .table-modern tbody tr {
-      transition: all 0.2s ease;
-      border-bottom: 1px solid rgba(138, 154, 126, 0.2);
-      background: #ffffff;
-    }
-    
-    .table-modern tbody tr:hover {
-      background: var(--agro-beige);
-      transform: scale(1.002);
-    }
-    
-    .table-modern tbody td {
-      padding: 0.9rem 0.75rem;
-      font-size: 0.8rem;
-      color: #2d2d2d;
-      font-weight: 600;
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+      background: var(--secondary);
     }
     
     .section-title {
-      font-size: 1.05rem;
-      font-weight: 800;
-      color: var(--agro-green-dark);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text-primary);
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      margin-bottom: 1rem;
     }
     
-    .header-gradient {
-      background: linear-gradient(135deg, #ffffff 0%, var(--agro-cream) 100%);
-      border: 3px solid var(--agro-green);
-      border-radius: 20px;
+    .grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+    
+    .grid-cols-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .grid-cols-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .grid-cols-4 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    
+    @media (max-width: 768px) {
+      .grid-cols-2,
+      .grid-cols-3,
+      .grid-cols-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
       padding: 2rem;
-      box-shadow: 0 8px 32px rgba(74, 93, 35, 0.2);
-    }
-    
-    .fade-in {
-      animation: fadeIn 0.5s ease-in;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .icon-wrapper {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 3rem;
-      height: 3rem;
       border-radius: 12px;
-      background: linear-gradient(135deg, var(--agro-green) 0%, var(--agro-green-light) 100%);
-      box-shadow: 0 4px 12px rgba(90, 110, 44, 0.3);
+      margin-bottom: 2rem;
+    }
+    
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+    
+    .header p {
+      opacity: 0.9;
+      font-size: 0.875rem;
     }
     
     .log-container {
-      background: #ffffff;
-      border: 2px solid var(--agro-sage);
-      border-radius: 12px;
-      padding: 1.2rem;
-      max-height: 250px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      max-height: 200px;
       overflow-y: auto;
       font-family: 'Courier New', monospace;
       font-size: 0.75rem;
-      margin-bottom: 1rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
     
     .log-entry {
-      padding: 0.3rem 0;
-      border-bottom: 1px solid rgba(138, 154, 126, 0.2);
-      font-weight: 600;
-      color: #2d2d2d;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid var(--border);
     }
     
     .log-entry:last-child {
       border-bottom: none;
     }
     
-    .log-success {
-      color: var(--agro-green-dark);
-      font-weight: 700;
-    }
+    .log-success { color: var(--accent); font-weight: 600; }
+    .log-error { color: #dc2626; font-weight: 600; }
+    .log-warning { color: #f59e0b; font-weight: 600; }
+    .log-info { color: var(--primary); font-weight: 600; }
     
-    .log-error {
-      color: #dc2626;
-      font-weight: 700;
-    }
-    
-    .log-info {
-      color: #0369a1;
-      font-weight: 600;
-    }
-    
-    .log-warning {
-      color: #d97706;
-      font-weight: 700;
-    }
-    
-    .summary-panel {
-      background: linear-gradient(135deg, var(--agro-green-dark) 0%, var(--agro-green) 100%);
-      border-radius: 18px;
-      padding: 2rem;
-      box-shadow: 0 8px 32px rgba(74, 93, 35, 0.3);
-      color: white;
-    }
-    
-    .summary-stat {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(10px);
-      border-radius: 12px;
-      padding: 1.25rem;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      transition: all 0.3s ease;
-    }
-    
-    .summary-stat:hover {
-      background: rgba(255, 255, 255, 0.25);
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-    }
-    
-    .summary-stat-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: rgba(255, 255, 255, 0.9);
-      margin-bottom: 0.5rem;
-    }
-    
-    .summary-stat-value {
-      font-size: 2rem;
-      font-weight: 900;
-      color: white;
-      line-height: 1;
-    }
-    
-    .summary-stat-sublabel {
-      font-size: 0.65rem;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.8);
-      margin-top: 0.5rem;
-    }
-    
-    .table-controls {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      flex-wrap: wrap;
-      background: var(--agro-beige);
-      padding: 1rem;
-      border-radius: 12px;
-      border: 2px solid var(--agro-sage);
-      margin-bottom: 1rem;
-    }
-    
-    .control-group {
-      flex: 1;
-      min-width: 200px;
-    }
-    
-    .control-label {
-      display: block;
-      font-size: 0.7rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--agro-green-dark);
-      margin-bottom: 0.5rem;
-    }
-    
-    .export-buttons {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-    }
-    
-    .btn-export {
-      background: linear-gradient(135deg, var(--agro-green) 0%, var(--agro-green-light) 100%);
-      color: white;
-      padding: 0.75rem 1.25rem;
-      border-radius: 10px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      transition: all 0.3s ease;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      box-shadow: 0 3px 10px rgba(90, 110, 44, 0.3);
-    }
-    
-    .btn-export:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(90, 110, 44, 0.4);
-    }
-    
-    .btn-export-secondary {
-      background: white;
-      color: var(--agro-green-dark);
-      border: 2px solid var(--agro-green);
-    }
-    
-    .btn-export-secondary:hover {
-      background: var(--agro-beige);
-    }
-    
-    .evolution-badge {
+    .evolution-info {
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
-      font-size: 0.65rem;
+      font-size: 0.75rem;
     }
     
     .evolution-arrow {
       display: flex;
       align-items: center;
       gap: 0.25rem;
-      font-weight: 700;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    
+    .column-selector {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .hidden {
+      display: none;
     }
   </style>
 </head>
-<body class="min-h-screen">
-  <div class="max-w-7xl mx-auto py-8 px-4" id="dashboard">
+<body>
+  <div style="max-width: 1600px; margin: 0 auto; padding: 2rem;">
     <!-- Header -->
-    <header class="header-gradient mb-8 fade-in">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-        <div class="flex items-start gap-4">
-          <div class="icon-wrapper">
-            <i data-lucide="trending-up" class="w-7 h-7 text-white"></i>
-          </div>
-          <div>
-            <h1 class="text-4xl md:text-5xl font-black mb-2" style="color: var(--agro-green-dark);">
-              Painel de Propostas
-            </h1>
-            <p class="text-xs font-black mb-2" style="color: var(--agro-brown); letter-spacing: 0.1em;">
-              SUP BARREIRAS • SISTEMA DE ANÁLISE DE PROPOSTAS
-            </p>
-            <p class="text-sm text-gray-700 max-w-2xl leading-relaxed font-semibold">
-              Importe uma ou mais planilhas do GRAO. O sistema detecta automaticamente todos os cabeçalhos.
-            </p>
-          </div>
+    <div class="header">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h1>Painel de Propostas</h1>
+          <p>SUP BARREIRAS • Sistema de Análise e Gestão de Propostas</p>
         </div>
-        <div class="flex flex-col items-end gap-3">
-          <label class="cursor-pointer group">
-            <input id="fileInput" type="file" multiple accept=".xlsx" class="hidden" />
-            <div class="btn-primary flex items-center gap-2">
-              <i data-lucide="upload" class="w-5 h-5"></i>
-              <span>Carregar Planilhas</span>
-            </div>
-          </label>
-          <div id="fileInfo" class="text-[0.7rem] text-gray-700 text-right font-bold"></div>
-        </div>
+        <label class="btn btn-primary" style="cursor: pointer;">
+          <input id="fileInput" type="file" multiple accept=".xlsx" style="display: none;" />
+          <i data-lucide="upload" style="width: 1.25rem; height: 1.25rem;"></i>
+          <span>Carregar Planilhas</span>
+        </label>
       </div>
-    </header>
+    </div>
 
-    <!-- Log de Processamento -->
-    <div id="logContainer" class="log-container hidden mb-6">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-black uppercase flex items-center gap-2" style="color: var(--agro-green-dark);">
-          <i data-lucide="activity" class="w-4 h-4"></i>
-          Log de Processamento
-        </h3>
-        <button id="clearLog" class="text-xs hover:text-red-600 font-bold" style="color: var(--agro-brown);">
-          <i data-lucide="x" class="w-4 h-4"></i>
+    <!-- Log -->
+    <div id="logContainer" class="log-container hidden" style="margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 0.5rem;">
+        <strong style="font-size: 0.875rem;">Log de Processamento</strong>
+        <button id="clearLog" class="btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+          Limpar
         </button>
       </div>
       <div id="logContent"></div>
     </div>
 
-    <!-- Filtros + Resumo -->
-    <section class="grid grid-cols-1 lg:grid-cols-[2fr,1fr] gap-6 mb-6">
+    <!-- Cards de Resumo -->
+    <div class="grid grid-cols-4" style="margin-bottom: 1.5rem;">
+      <div class="stat-card">
+        <div class="stat-label">Total de Propostas</div>
+        <div id="statTotal" class="stat-value">0</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary);">Filtradas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Valor Total</div>
+        <div id="statValor" class="stat-value" style="font-size: 1.5rem;">R$ 0</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary);">Somado</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Novas</div>
+        <div id="statNovas" class="stat-value">0</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary);">Propostas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Removidas</div>
+        <div id="statRemovidas" class="stat-value">0</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary);">Propostas</div>
+      </div>
+    </div>
+
+    <!-- Filtros e Seletor de Colunas -->
+    <div class="grid" style="grid-template-columns: 2fr 1fr; margin-bottom: 1.5rem;">
       <!-- Filtros -->
-      <div class="glass p-6 fade-in" style="animation-delay: 0.1s">
-        <div class="flex items-center justify-between mb-5">
-          <h2 class="section-title">
-            <i data-lucide="filter" class="w-6 h-6"></i>
-            Filtros Dinâmicos
+      <div class="filter-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2 class="section-title" style="margin: 0;">
+            <i data-lucide="filter" style="width: 1.25rem; height: 1.25rem;"></i>
+            Filtros por Coluna
           </h2>
-          <div class="flex items-center gap-3">
-            <span class="badge text-white border-2" style="background-color: var(--agro-green); border-color: var(--agro-green-dark);">
-              <i data-lucide="database" class="w-3.5 h-3.5"></i>
-              Base: última planilha
-            </span>
-            <button id="clearFilters" class="text-xs hover:opacity-70 transition-opacity flex items-center gap-1 font-black" style="color: var(--agro-brown);">
-              <i data-lucide="x-circle" class="w-4 h-4"></i>
-              Limpar
-            </button>
-          </div>
+          <button id="clearFilters" class="btn-secondary" style="padding: 0.5rem 1rem;">
+            <i data-lucide="x-circle" style="width: 1rem; height: 1rem;"></i>
+            Limpar Filtros
+          </button>
         </div>
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div>
-            <label class="block mb-2 text-xs font-black uppercase tracking-wide flex items-center gap-1" style="color: var(--agro-green-dark);">
-              <i data-lucide="building-2" class="w-4 h-4"></i>
-              Dependência
-            </label>
-            <select id="filterDependencia" class="w-full input-modern">
-              <option value="">Todas</option>
-            </select>
-          </div>
-          <div>
-            <label class="block mb-2 text-xs font-black uppercase tracking-wide flex items-center gap-1" style="color: var(--agro-green-dark);">
-              <i data-lucide="file-check" class="w-4 h-4"></i>
-              Situação
-            </label>
-            <select id="filterSituacao" class="w-full input-modern">
-              <option value="">Todas</option>
-            </select>
-          </div>
-          <div>
-            <label class="block mb-2 text-xs font-black uppercase tracking-wide flex items-center gap-1" style="color: var(--agro-green-dark);">
-              <i data-lucide="map-pin" class="w-4 h-4"></i>
-              Estado
-            </label>
-            <select id="filterEstado" class="w-full input-modern">
-              <option value="">Todos</option>
-            </select>
-          </div>
-          <div>
-            <label class="block mb-2 text-xs font-black uppercase tracking-wide flex items-center gap-1" style="color: var(--agro-green-dark);">
-              <i data-lucide="user-check" class="w-4 h-4"></i>
-              Super Comercial
-            </label>
-            <select id="filterSuper" class="w-full input-modern">
-              <option value="">Todos</option>
-            </select>
-          </div>
-          <div>
-            <label class="block mb-2 text-xs font-black uppercase tracking-wide flex items-center gap-1" style="color: var(--agro-green-dark);">
-              <i data-lucide="hash" class="w-4 h-4"></i>
-              Proposta
-            </label>
-            <input id="filterProposta" placeholder="Código exato ou parte" class="w-full input-modern" />
-          </div>
-          <div>
-            <label class="block mb-2 text-xs font-black uppercase tracking-wide flex items-center gap-1" style="color: var(--agro-green-dark);">
-              <i data-lucide="users" class="w-4 h-4"></i>
-              Cliente
-            </label>
-            <input id="filterCliente" placeholder="Nome contém..." class="w-full input-modern" />
-          </div>
-        </div>
+        <div id="filtersContainer" class="grid grid-cols-3"></div>
       </div>
 
-      <!-- Painel de Resumo -->
-      <div class="summary-panel fade-in" style="animation-delay: 0.2s">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-black uppercase tracking-wide text-white flex items-center gap-2">
-            <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
-            Resumo Executivo
-          </h2>
-        </div>
-        
-        <div class="grid grid-cols-3 gap-3 mb-4">
-          <div class="summary-stat">
-            <div class="flex items-center gap-2 mb-2">
-              <i data-lucide="list" class="w-5 h-5 text-white"></i>
-            </div>
-            <div class="summary-stat-label">Propostas</div>
-            <div id="cardQtd" class="summary-stat-value">-</div>
-            <div class="summary-stat-sublabel">Filtradas</div>
-          </div>
-          
-          <div class="summary-stat">
-            <div class="flex items-center gap-2 mb-2">
-              <i data-lucide="dollar-sign" class="w-5 h-5 text-white"></i>
-            </div>
-            <div class="summary-stat-label">Valor Total</div>
-            <div id="cardValor" class="summary-stat-value text-xl">-</div>
-            <div class="summary-stat-sublabel">Somado</div>
-          </div>
-          
-          <div class="summary-stat">
-            <div class="flex items-center gap-2 mb-2">
-              <i data-lucide="trash-2" class="w-5 h-5 text-white"></i>
-            </div>
-            <div class="summary-stat-label">Removidas</div>
-            <div id="cardRemovidas" class="summary-stat-value">-</div>
-            <div class="summary-stat-sublabel">Propostas</div>
-          </div>
-        </div>
-
-        <div class="bg-white bg-opacity-10 rounded-lg p-3 mb-3">
-          <p class="text-xs text-white leading-relaxed font-semibold flex items-start gap-2">
-            <i data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <span>Removidas: propostas que constavam em versões anteriores mas não aparecem na base atual.</span>
-          </p>
-        </div>
-
-        <div id="latestLabel" class="text-xs text-white text-center font-bold opacity-90"></div>
+      <!-- Seletor de Colunas -->
+      <div class="filter-section">
+        <h2 class="section-title">
+          <i data-lucide="columns" style="width: 1.25rem; height: 1.25rem;"></i>
+          Colunas Visíveis
+        </h2>
+        <div id="columnSelector" class="column-selector scrollbar-thin"></div>
       </div>
-    </section>
+    </div>
 
-    <!-- Tabela principal com controles + Painéis laterais -->
-    <section class="grid grid-cols-1 xl:grid-cols-[3fr,1.4fr] gap-6 mb-6">
-      <!-- Tabela principal -->
-      <div class="glass p-6 fade-in" style="animation-delay: 0.3s">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="section-title">
-            <i data-lucide="table" class="w-6 h-6"></i>
-            Propostas - Base Atual
-          </h2>
+    <!-- Controles de Visualização e Exportação -->
+    <div class="card" style="padding: 1rem; margin-bottom: 1.5rem;">
+      <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">
+            MODO DE VISUALIZAÇÃO
+          </label>
+          <select id="viewMode" class="input">
+            <option value="all">Todas as Propostas</option>
+            <option value="consolidated">Consolidado por Agência</option>
+          </select>
         </div>
-
-        <!-- Controles de Visualização e Exportação -->
-        <div class="table-controls">
-          <div class="control-group">
-            <label class="control-label">
-              <i data-lucide="layout-list" class="w-3.5 h-3.5 inline"></i>
-              Modo de Visualização
-            </label>
-            <select id="viewMode" class="w-full input-modern">
-              <option value="all">Todas as Propostas</option>
-              <option value="consolidated">Consolidado por Agência</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label class="control-label">
-              <i data-lucide="building-2" class="w-3.5 h-3.5 inline"></i>
-              Filtrar por Agência Específica
-            </label>
-            <select id="filterAgenciaEspecifica" class="w-full input-modern">
-              <option value="">Todas as Agências</option>
-            </select>
-          </div>
-
-          <div class="export-buttons">
-            <button id="btnExportCSV" class="btn-export">
-              <i data-lucide="download" class="w-4 h-4"></i>
-              <span>CSV</span>
-            </button>
-            <button id="btnExportPNG" class="btn-export btn-export-secondary">
-              <i data-lucide="image" class="w-4 h-4"></i>
-              <span>PNG</span>
-            </button>
-          </div>
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">
+            FILTRAR POR AGÊNCIA
+          </label>
+          <select id="filterAgencia" class="input">
+            <option value="">Todas as Agências</option>
+          </select>
         </div>
+        <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+          <button id="btnExportCSV" class="btn btn-primary">
+            <i data-lucide="download" style="width: 1rem; height: 1rem;"></i>
+            CSV
+          </button>
+          <button id="btnExportPNG" class="btn btn-secondary">
+            <i data-lucide="image" style="width: 1rem; height: 1rem;"></i>
+            PNG
+          </button>
+        </div>
+      </div>
+    </div>
 
-        <!-- Tabela -->
-        <div class="overflow-auto max-h-[500px] scrollbar-thin rounded-xl border-2" style="border-color: var(--agro-sage);">
-          <table class="min-w-full table-modern" id="mainTable">
-            <thead id="tableHead">
+    <!-- Tabela Principal -->
+    <div class="card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+      <h2 class="section-title">
+        <i data-lucide="table" style="width: 1.25rem; height: 1.25rem;"></i>
+        Base Atual de Propostas
+      </h2>
+      <div class="table-container scrollbar-thin" style="max-height: 600px; overflow: auto;">
+        <table id="mainTable">
+          <thead>
+            <tr id="tableHead"></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Painéis Adicionais -->
+    <div class="grid grid-cols-3">
+      <!-- Total por Agência -->
+      <div class="card" style="padding: 1.5rem;">
+        <h2 class="section-title">
+          <i data-lucide="building-2" style="width: 1.25rem; height: 1.25rem;"></i>
+          Por Agência
+        </h2>
+        <div class="table-container scrollbar-thin" style="max-height: 300px;">
+          <table>
+            <thead>
               <tr>
-                <th class="px-3 py-3 text-left">Prefixo</th>
-                <th class="px-3 py-3 text-left">Proposta</th>
-                <th class="px-3 py-3 text-left">Cliente</th>
-                <th class="px-3 py-3 text-left">Situação</th>
-                <th class="px-3 py-3 text-left">Dependência</th>
-                <th class="px-3 py-3 text-right">Valor Total</th>
-                <th class="px-3 py-3 text-left">Estado</th>
-                <th class="px-3 py-3 text-left">Super</th>
-                <th class="px-3 py-3 text-left">Evolução</th>
+                <th>Agência</th>
+                <th style="text-align: center;">Qtd</th>
+                <th style="text-align: right;">Valor</th>
               </tr>
             </thead>
-            <tbody id="tableBody">
-            </tbody>
+            <tbody id="agenciaBody"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- Painéis laterais -->
-      <div class="flex flex-col gap-6">
-        <!-- Totais por Agência -->
-        <div class="glass p-5 fade-in" style="animation-delay: 0.4s">
-          <h2 class="section-title mb-4">
-            <i data-lucide="pie-chart" class="w-6 h-6"></i>
-            Total por Agência
-          </h2>
-          <div class="overflow-auto max-h-56 scrollbar-thin rounded-xl border-2" style="border-color: var(--agro-sage);">
-            <table class="w-full table-modern">
-              <thead>
-                <tr>
-                  <th class="py-2 px-3 text-left">Dependência</th>
-                  <th class="py-2 px-3 text-center">Qtd</th>
-                  <th class="py-2 px-3 text-right">Valor</th>
-                </tr>
-              </thead>
-              <tbody id="agenciaBody">
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Situação por Agência -->
-        <div class="glass p-5 fade-in" style="animation-delay: 0.45s">
-          <h2 class="section-title mb-3">
-            <i data-lucide="layout-grid" class="w-6 h-6"></i>
-            Situação por Agência
-          </h2>
-          <p class="text-[0.7rem] text-gray-700 mb-3 leading-relaxed font-semibold">
-            Distribuição das situações das propostas em cada dependência.
-          </p>
-          <div class="overflow-auto max-h-64 scrollbar-thin rounded-xl border-2" style="border-color: var(--agro-sage);">
-            <table class="w-full table-modern">
-              <thead id="situacaoPorAgenciaHead">
-              </thead>
-              <tbody id="situacaoPorAgenciaBody">
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Evolução por Situação -->
-        <div class="glass p-5 fade-in" style="animation-delay: 0.5s">
-          <h2 class="section-title mb-2">
-            <i data-lucide="activity" class="w-6 h-6"></i>
-            Evolução por Situação
-          </h2>
-          <p class="text-[0.7rem] text-gray-700 mb-3 leading-relaxed font-semibold">
-            Contagem de propostas por situação em cada versão de planilha.
-          </p>
-          <div class="overflow-auto max-h-48 scrollbar-thin rounded-xl border-2" style="border-color: var(--agro-sage);">
-            <table class="w-full table-modern">
-              <thead id="situacaoEvolHead">
-              </thead>
-              <tbody id="situacaoEvolBody">
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Removidas -->
-        <div class="glass p-5 fade-in" style="animation-delay: 0.6s">
-          <h2 class="section-title mb-2">
-            <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i>
-            <span class="text-red-700">Propostas Removidas</span>
-          </h2>
-          <p class="text-[0.7rem] text-gray-700 mb-3 leading-relaxed font-semibold">
-            Propostas que existiam em planilhas anteriores e não aparecem na base atual.
-          </p>
-          <div class="overflow-auto max-h-44 scrollbar-thin rounded-xl border-2 border-red-300">
-            <table class="w-full table-modern">
-              <thead>
-                <tr>
-                  <th class="py-2 px-3 text-left">Proposta</th>
-                  <th class="py-2 px-3 text-left">Cliente</th>
-                  <th class="py-2 px-3 text-left">Dependência</th>
-                  <th class="py-2 px-3 text-right">Valor</th>
-                </tr>
-              </thead>
-              <tbody id="removidasBody">
-              </tbody>
-            </table>
-          </div>
+      <!-- Situação por Agência -->
+      <div class="card" style="padding: 1.5rem;">
+        <h2 class="section-title">
+          <i data-lucide="pie-chart" style="width: 1.25rem; height: 1.25rem;"></i>
+          Situação/Agência
+        </h2>
+        <div class="table-container scrollbar-thin" style="max-height: 300px;">
+          <table>
+            <thead id="situacaoAgenciaHead"></thead>
+            <tbody id="situacaoAgenciaBody"></tbody>
+          </table>
         </div>
       </div>
-    </section>
+
+      <!-- Removidas -->
+      <div class="card" style="padding: 1.5rem;">
+        <h2 class="section-title">
+          <i data-lucide="trash-2" style="width: 1.25rem; height: 1.25rem; color: #dc2626;"></i>
+          <span style="color: #dc2626;">Removidas</span>
+        </h2>
+        <div class="table-container scrollbar-thin" style="max-height: 300px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Proposta</th>
+                <th>Cliente</th>
+                <th style="text-align: right;">Valor</th>
+              </tr>
+            </thead>
+            <tbody id="removidasBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     lucide.createIcons();
     
+    // === LOG SYSTEM ===
     const logContainer = document.getElementById("logContainer");
     const logContent = document.getElementById("logContent");
     const clearLog = document.getElementById("clearLog");
@@ -754,7 +564,6 @@
       logContent.appendChild(entry);
       logContainer.classList.remove('hidden');
       logContent.scrollTop = logContent.scrollHeight;
-      console.log(`[${type.toUpperCase()}] ${message}`);
     }
     
     clearLog.addEventListener('click', () => {
@@ -762,155 +571,91 @@
       logContainer.classList.add('hidden');
     });
     
-    // Mapeamento global de colunas detectadas
+    // === GLOBAL STATE ===
+    let datasets = [];
+    let latestIndex = -1;
+    let latestRows = [];
+    let proposalHistory = {};
+    let removedProposals = [];
     let columnMapping = {};
+    let allColumns = [];
+    let visibleColumns = new Set();
+    let columnFilters = {};
     
+    // === COLUMN DETECTION ===
     function detectHeaderRow(sheet) {
-      addLog("🔍 Iniciando detecção automática de TODOS os cabeçalhos...", 'info');
+      addLog("🔍 Detectando cabeçalhos...", 'info');
       
       const range = XLSX.utils.decode_range(sheet['!ref']);
-      columnMapping = {}; // Reset
+      columnMapping = {};
       
-      const columnMappings = {
+      const columnTypes = {
         'Prefixo': ['prefixo', 'prefix'],
-        'Proposta': ['proposta', 'proposal', 'numero proposta', 'nº proposta'],
-        'Cliente': ['cliente', 'client', 'nome cliente', 'nome do cliente', 'customer'],
-        'Situação': ['situação', 'situacao', 'status', 'situação da proposta', 'situação da popó'],
-        'Dependência': ['dependência', 'dependencia', 'agência', 'agencia', 'unidade'],
-        'Valor': ['valor', 'value', 'valor total', 'montante'],
-        'Estado': ['estado', 'estado da solicitação', 'estado solicitacao', 'uf'],
-        'SuperComercial': ['super', 'super comercial', 'supervisor']
+        'Proposta': ['proposta', 'proposal', 'numero', 'nº'],
+        'Cliente': ['cliente', 'client', 'nome'],
+        'Situação': ['situação', 'situacao', 'status'],
+        'Dependência': ['dependência', 'dependencia', 'agência', 'agencia'],
+        'Valor': ['valor', 'value', 'total', 'montante'],
+        'Estado': ['estado', 'uf'],
+        'SuperComercial': ['super', 'comercial', 'supervisor']
       };
       
       for (let row = range.s.r; row <= Math.min(range.s.r + 10, range.e.r); row++) {
         let matchCount = 0;
-        let foundColumns = {};
+        let found = {};
         
         for (let col = range.s.c; col <= range.e.c; col++) {
-          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-          const cell = sheet[cellAddress];
+          const addr = XLSX.utils.encode_cell({ r: row, c: col });
+          const cell = sheet[addr];
           
           if (cell && cell.v) {
             const value = String(cell.v).toLowerCase().trim();
-            const colLetter = String.fromCharCode(65 + col);
             
-            for (const [columnType, keywords] of Object.entries(columnMappings)) {
-              if (keywords.some(keyword => value.includes(keyword))) {
-                if (!foundColumns[columnType]) {
-                  foundColumns[columnType] = cell.v; // Nome original da coluna
+            for (const [type, keywords] of Object.entries(columnTypes)) {
+              if (keywords.some(kw => value.includes(kw))) {
+                if (!found[type]) {
+                  found[type] = cell.v;
                   matchCount++;
-                  addLog(`    ✓ ${columnType} encontrado: "${cell.v}" (coluna ${colLetter})`, 'success');
                 }
               }
             }
           }
         }
         
-        addLog(`  → Linha ${row + 1}: ${matchCount} colunas identificadas`, matchCount > 0 ? 'info' : 'warning');
-        
-        if (matchCount >= 5) {
-          columnMapping = foundColumns;
-          addLog(`✓ CABEÇALHO COMPLETO DETECTADO NA LINHA ${row + 1}!`, 'success');
-          addLog(`  Mapeamento salvo: ${Object.keys(foundColumns).join(', ')}`, 'success');
+        if (matchCount >= 4) {
+          columnMapping = found;
+          addLog(`✓ Cabeçalho detectado na linha ${row + 1}`, 'success');
           return row;
         }
       }
       
-      addLog("⚠ Cabeçalho completo não detectado, usando linha 2 como fallback", 'warning');
+      addLog("⚠ Usando linha 2 como fallback", 'warning');
       return 1;
     }
     
-    // Função melhorada para buscar valores usando o mapeamento
-    function getColumn(row, columnType) {
-      // Primeiro tenta usar o mapeamento detectado
-      if (columnMapping[columnType]) {
-        const colName = columnMapping[columnType];
-        if (row[colName] !== undefined && row[colName] !== null && row[colName] !== "") {
-          return row[colName];
-        }
+    function getColumn(row, type) {
+      if (columnMapping[type] && row[columnMapping[type]] !== undefined) {
+        return row[columnMapping[type]];
       }
-      
-      // Fallback para tentativas com nomes conhecidos
-      const fallbacks = {
-        'Prefixo': ['Prefixo', 'PREFIXO', 'A', 'M'],
-        'Proposta': ['Proposta', 'PROPOSTA', 'C'],
-        'Cliente': ['Nome do Cliente', 'NOME DO CLIENTE', 'D', 'Cliente'],
-        'Situação': ['Situação da Popó', 'Situação da Proposta', 'E', 'Situação', 'SITUAÇÃO'],
-        'Dependência': ['DEPENDÊNCIA', 'Dependência', 'F', 'Agência'],
-        'Valor': ['VALOR TOTAL', 'Valor Total', 'I', 'Valor'],
-        'Estado': ['ESTADO DA SOLICITAÇÃO', 'Estado da Solicitação', 'K', 'Estado'],
-        'SuperComercial': ['SUPER COMERCIAL', 'Super Comercial', 'L', 'Super']
-      };
-      
-      if (fallbacks[columnType]) {
-        for (const key of fallbacks[columnType]) {
-          if (row[key] !== undefined && row[key] !== null && row[key] !== "") {
-            return row[key];
-          }
-        }
-      }
-      
       return "";
     }
-
+    
     function parseNumber(val) {
-      if (val === null || val === undefined) return 0;
+      if (!val) return 0;
       if (typeof val === "number") return val;
       const clean = String(val).replace(/\./g, "").replace(",", ".");
       const n = parseFloat(clean);
       return isNaN(n) ? 0 : n;
     }
-
-    let datasets = [];
-    let latestIndex = -1;
-    let latestRows = [];
-    let proposalHistory = {};
-    let removedProposals = [];
-
-    const fileInput = document.getElementById("fileInput");
-    const fileInfo = document.getElementById("fileInfo");
-    const latestLabel = document.getElementById("latestLabel");
-
-    const filterDependencia = document.getElementById("filterDependencia");
-    const filterSituacao = document.getElementById("filterSituacao");
-    const filterEstado = document.getElementById("filterEstado");
-    const filterSuper = document.getElementById("filterSuper");
-    const filterProposta = document.getElementById("filterProposta");
-    const filterCliente = document.getElementById("filterCliente");
-    const clearFilters = document.getElementById("clearFilters");
-
-    const viewMode = document.getElementById("viewMode");
-    const filterAgenciaEspecifica = document.getElementById("filterAgenciaEspecifica");
-
-    const tableHead = document.getElementById("tableHead");
-    const tableBody = document.getElementById("tableBody");
-    const agenciaBody = document.getElementById("agenciaBody");
-    const removidasBody = document.getElementById("removidasBody");
-
-    const cardQtd = document.getElementById("cardQtd");
-    const cardValor = document.getElementById("cardValor");
-    const cardRemovidas = document.getElementById("cardRemovidas");
-
-    const btnExportCSV = document.getElementById("btnExportCSV");
-    const btnExportPNG = document.getElementById("btnExportPNG");
-
-    const situacaoEvolHead = document.getElementById("situacaoEvolHead");
-    const situacaoEvolBody = document.getElementById("situacaoEvolBody");
     
-    const situacaoPorAgenciaHead = document.getElementById("situacaoPorAgenciaHead");
-    const situacaoPorAgenciaBody = document.getElementById("situacaoPorAgenciaBody");
-
-    viewMode.addEventListener("change", applyFilters);
-    filterAgenciaEspecifica.addEventListener("change", applyFilters);
-
+    // === FILE PROCESSING ===
+    const fileInput = document.getElementById("fileInput");
+    
     fileInput.addEventListener("change", async (e) => {
       const files = Array.from(e.target.files || []);
-      if (!files.length) {
-        resetUI();
-        return;
-      }
-
-      addLog(`🚀 Iniciando processamento de ${files.length} arquivo(s)...`, 'info');
+      if (!files.length) return;
+      
+      addLog(`🚀 Processando ${files.length} arquivo(s)...`, 'info');
       
       datasets = [];
       proposalHistory = {};
@@ -918,391 +663,333 @@
       latestIndex = -1;
       latestRows = [];
       columnMapping = {};
-
+      allColumns = [];
+      
       for (const file of files) {
         try {
-          addLog(`📄 Lendo arquivo: ${file.name}`, 'info');
+          addLog(`📄 ${file.name}`, 'info');
           const rows = await readXlsx(file);
           if (rows && rows.length) {
             datasets.push({ name: file.name, rows });
-            addLog(`✓ ${file.name}: ${rows.length} linhas de dados carregadas`, 'success');
-          } else {
-            addLog(`⚠ ${file.name}: Nenhuma linha encontrada`, 'warning');
+            addLog(`✓ ${rows.length} linhas`, 'success');
           }
         } catch (err) {
-          addLog(`✗ Erro ao processar ${file.name}: ${err.message}`, 'error');
-          console.error("Falha ao processar arquivo:", file.name, err);
+          addLog(`✗ Erro: ${err.message}`, 'error');
         }
       }
-
+      
       if (!datasets.length) {
-        addLog("✗ Nenhuma planilha válida foi carregada", 'error');
-        alert("Nenhuma planilha válida foi carregada.");
-        resetUI();
+        addLog("✗ Nenhuma planilha válida", 'error');
         return;
       }
-
+      
       latestIndex = datasets.length - 1;
       latestRows = datasets[latestIndex].rows || [];
       
-      addLog(`📊 Base definida: ${datasets[latestIndex].name} (${latestRows.length} registros)`, 'success');
-
-      addLog("🔄 Construindo histórico de propostas...", 'info');
       buildProposalHistory();
-      
-      addLog("🔍 Computando propostas removidas...", 'info');
       computeRemovedProposals();
-      addLog(`${removedProposals.length} propostas removidas identificadas`, removedProposals.length > 0 ? 'warning' : 'success');
-      
-      updateFileInfo();
-      populateFilterOptions();
+      detectAllColumns();
+      initializeVisibleColumns();
+      buildColumnSelector();
+      buildFilters();
       applyFilters();
       
-      addLog("✓ Processamento concluído com sucesso!", 'success');
-      addLog(`📋 Colunas mapeadas: ${Object.keys(columnMapping).join(', ')}`, 'info');
-      
+      addLog("✓ Processamento concluído!", 'success');
       lucide.createIcons();
     });
-
+    
     function readXlsx(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (evt) => {
           try {
-            if (typeof XLSX === "undefined") {
-              throw new Error("XLSX não encontrado.");
-            }
-            
-            addLog(`  Processando binário...`, 'info');
             const data = new Uint8Array(evt.target.result);
             const workbook = XLSX.read(data, { type: "array" });
-            
-            addLog(`  Planilha possui ${workbook.SheetNames.length} aba(s)`, 'info');
-            const sheetName = workbook.SheetNames[0];
-            addLog(`  Lendo aba: "${sheetName}"`, 'info');
-            
-            const sheet = workbook.Sheets[sheetName];
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
             const headerRow = detectHeaderRow(sheet);
-            const rows = XLSX.utils.sheet_to_json(sheet, { 
-              defval: "",
-              range: headerRow
-            });
-            
-            addLog(`  ✓ Dados extraídos: ${rows.length} linhas`, 'success');
-            
+            const rows = XLSX.utils.sheet_to_json(sheet, { defval: "", range: headerRow });
             resolve(rows);
           } catch (err) {
-            addLog(`  ✗ Erro: ${err.message}`, 'error');
             reject(err);
           }
         };
-        reader.onerror = (err) => {
-          addLog(`  ✗ Erro ao ler arquivo`, 'error');
-          reject(err);
-        };
+        reader.onerror = reject;
         reader.readAsArrayBuffer(file);
       });
     }
-
+    
     function buildProposalHistory() {
       proposalHistory = {};
-      let totalProposals = 0;
-      
       datasets.forEach((ds, dsIndex) => {
-        let dsProposals = 0;
         (ds.rows || []).forEach((row) => {
           const proposta = String(getColumn(row, 'Proposta')).trim();
           if (!proposta) return;
-          
           const situacao = String(getColumn(row, 'Situação')).trim();
-          
-          if (!proposalHistory[proposta]) {
-            proposalHistory[proposta] = [];
-            totalProposals++;
-          }
+          if (!proposalHistory[proposta]) proposalHistory[proposta] = [];
           proposalHistory[proposta].push({ dsIndex, row, situacao });
-          dsProposals++;
         });
-        addLog(`  ${ds.name}: ${dsProposals} propostas`, 'info');
       });
-      
-      addLog(`✓ ${totalProposals} propostas únicas no histórico`, 'success');
     }
-
+    
     function computeRemovedProposals() {
       removedProposals = [];
       if (latestIndex < 0) return;
-
+      
       Object.entries(proposalHistory).forEach(([proposta, history]) => {
-        const existedBefore = history.some((h) => h.dsIndex < latestIndex);
-        const existsNow = history.some((h) => h.dsIndex === latestIndex);
-
+        const existedBefore = history.some(h => h.dsIndex < latestIndex);
+        const existsNow = history.some(h => h.dsIndex === latestIndex);
+        
         if (existedBefore && !existsNow) {
-          const lastPrev = history
-            .filter((h) => h.dsIndex < latestIndex)
-            .sort((a, b) => b.dsIndex - a.dsIndex)[0];
-
-          removedProposals.push({
-            proposta,
-            row: lastPrev.row,
-          });
+          const lastPrev = history.filter(h => h.dsIndex < latestIndex).sort((a, b) => b.dsIndex - a.dsIndex)[0];
+          removedProposals.push({ proposta, row: lastPrev.row });
         }
       });
     }
-
-    function populateFilterOptions() {
-      const deps = new Set();
-      const sits = new Set();
-      const estados = new Set();
-      const supers = new Set();
-
-      (latestRows || []).forEach((row) => {
-        const dep = getColumn(row, 'Dependência');
-        const sit = getColumn(row, 'Situação');
-        const est = getColumn(row, 'Estado');
-        const sup = getColumn(row, 'SuperComercial');
-        
-        if (dep) deps.add(dep);
-        if (sit) sits.add(sit);
-        if (est) estados.add(est);
-        if (sup) supers.add(sup);
-      });
-
-      function fillSelect(select, values, allLabel) {
-        const current = select.value;
-        select.innerHTML = `<option value="">${allLabel}</option>`;
-        Array.from(values)
-          .filter((v) => v && String(v).trim() !== "")
-          .sort()
-          .forEach((v) => {
-            const opt = document.createElement("option");
-            opt.value = v;
-            opt.textContent = v;
-            select.appendChild(opt);
-          });
-        if (Array.from(select.options).some(o => o.value === current)) {
-          select.value = current;
+    
+    function detectAllColumns() {
+      allColumns = [];
+      if (!latestRows.length) return;
+      
+      const firstRow = latestRows[0];
+      allColumns = Object.keys(firstRow).filter(key => key.trim() !== "");
+      addLog(`📋 ${allColumns.length} colunas detectadas`, 'info');
+    }
+    
+    function initializeVisibleColumns() {
+      visibleColumns = new Set(allColumns);
+    }
+    
+    // === COLUMN SELECTOR ===
+    function buildColumnSelector() {
+      const selector = document.getElementById("columnSelector");
+      selector.innerHTML = '';
+      
+      const selectAll = document.createElement('div');
+      selectAll.className = 'checkbox-group';
+      selectAll.style.borderBottom = '1px solid var(--border)';
+      selectAll.style.marginBottom = '0.5rem';
+      selectAll.style.fontWeight = '600';
+      selectAll.innerHTML = `
+        <input type="checkbox" id="selectAllCols" class="checkbox" checked />
+        <label for="selectAllCols" style="cursor: pointer; flex: 1;">Selecionar Todas</label>
+      `;
+      selector.appendChild(selectAll);
+      
+      document.getElementById('selectAllCols').addEventListener('change', (e) => {
+        if (e.target.checked) {
+          visibleColumns = new Set(allColumns);
+          document.querySelectorAll('.col-checkbox').forEach(cb => cb.checked = true);
+        } else {
+          visibleColumns.clear();
+          document.querySelectorAll('.col-checkbox').forEach(cb => cb.checked = false);
         }
+        applyFilters();
+      });
+      
+      allColumns.forEach(col => {
+        const div = document.createElement('div');
+        div.className = 'checkbox-group';
+        const id = `col_${col.replace(/\s+/g, '_')}`;
+        div.innerHTML = `
+          <input type="checkbox" id="${id}" class="checkbox col-checkbox" checked />
+          <label for="${id}" style="cursor: pointer; flex: 1; font-size: 0.875rem;">${col}</label>
+        `;
+        selector.appendChild(div);
+        
+        div.querySelector('input').addEventListener('change', (e) => {
+          if (e.target.checked) {
+            visibleColumns.add(col);
+          } else {
+            visibleColumns.delete(col);
+          }
+          updateSelectAllCheckbox();
+          applyFilters();
+        });
+      });
+    }
+    
+    function updateSelectAllCheckbox() {
+      const selectAll = document.getElementById('selectAllCols');
+      if (selectAll) {
+        selectAll.checked = visibleColumns.size === allColumns.length;
       }
-
-      fillSelect(filterDependencia, deps, "Todas");
-      fillSelect(filterSituacao, sits, "Todas");
-      fillSelect(filterEstado, estados, "Todos");
-      fillSelect(filterSuper, supers, "Todos");
-      fillSelect(filterAgenciaEspecifica, deps, "Todas as Agências");
-        
-      addLog(`✓ Filtros populados: ${deps.size} dependências, ${sits.size} situações`, 'success');
     }
-
-    [
-      filterDependencia,
-      filterSituacao,
-      filterEstado,
-      filterSuper,
-      filterProposta,
-      filterCliente
-    ].forEach((el) => {
-      el.addEventListener("input", applyFilters);
-      el.addEventListener("change", applyFilters);
-    });
-
-    clearFilters.addEventListener("click", () => {
-      filterDependencia.value = "";
-      filterSituacao.value = "";
-      filterEstado.value = "";
-      filterSuper.value = "";
-      filterProposta.value = "";
-      filterCliente.value = "";
-      filterAgenciaEspecifica.value = "";
+    
+    // === FILTERS ===
+    function buildFilters() {
+      const container = document.getElementById("filtersContainer");
+      container.innerHTML = '';
+      columnFilters = {};
+      
+      allColumns.forEach(col => {
+        const values = new Set();
+        latestRows.forEach(row => {
+          const val = row[col];
+          if (val && String(val).trim()) values.add(String(val).trim());
+        });
+        
+        if (values.size === 0) return;
+        
+        const div = document.createElement('div');
+        div.innerHTML = `
+          <label style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">
+            ${col.toUpperCase()}
+          </label>
+          <select class="input filter-select" data-column="${col}">
+            <option value="">Todos</option>
+            ${Array.from(values).sort().map(v => `<option value="${v}">${v}</option>`).join('')}
+          </select>
+        `;
+        container.appendChild(div);
+        
+        const select = div.querySelector('select');
+        select.addEventListener('change', (e) => {
+          columnFilters[col] = e.target.value;
+          applyFilters();
+        });
+      });
+      
+      // Filtro especial para agência
+      const filterAgencia = document.getElementById('filterAgencia');
+      const agencias = new Set();
+      latestRows.forEach(row => {
+        const dep = getColumn(row, 'Dependência');
+        if (dep) agencias.add(dep);
+      });
+      
+      filterAgencia.innerHTML = '<option value="">Todas as Agências</option>';
+      Array.from(agencias).sort().forEach(ag => {
+        const opt = document.createElement('option');
+        opt.value = ag;
+        opt.textContent = ag;
+        filterAgencia.appendChild(opt);
+      });
+      
+      filterAgencia.addEventListener('change', applyFilters);
+    }
+    
+    document.getElementById('clearFilters').addEventListener('click', () => {
+      columnFilters = {};
+      document.querySelectorAll('.filter-select').forEach(sel => sel.value = '');
+      document.getElementById('filterAgencia').value = '';
       applyFilters();
     });
-
+    
     function applyFilters() {
-      if (latestIndex < 0 || !latestRows || !latestRows.length) {
-        resetUI();
-        return;
-      }
-
-      const depSel = filterDependencia.value.trim();
-      const sitSel = filterSituacao.value.trim();
-      const estSel = filterEstado.value.trim();
-      const superSel = filterSuper.value.trim();
-      const propostaBusca = filterProposta.value.trim().toLowerCase();
-      const clienteBusca = filterCliente.value.trim().toLowerCase();
-      const agenciaEspecifica = filterAgenciaEspecifica.value.trim();
-
-      let filtered = latestRows.filter((row) => {
-        const dep = String(getColumn(row, 'Dependência')).trim();
-        const sit = String(getColumn(row, 'Situação')).trim();
-        const est = String(getColumn(row, 'Estado')).trim();
-        const sup = String(getColumn(row, 'SuperComercial')).trim();
-        const proposta = String(getColumn(row, 'Proposta')).trim().toLowerCase();
-        const cliente = String(getColumn(row, 'Cliente')).trim().toLowerCase();
-
-        if (depSel && dep !== depSel) return false;
-        if (sitSel && sit !== sitSel) return false;
-        if (estSel && est !== estSel) return false;
-        if (superSel && sup !== superSel) return false;
-        if (propostaBusca && !proposta.includes(propostaBusca)) return false;
-        if (clienteBusca && !cliente.includes(clienteBusca)) return false;
-        if (agenciaEspecifica && dep !== agenciaEspecifica) return false;
-
+      if (!latestRows.length) return;
+      
+      const agenciaFilter = document.getElementById('filterAgencia').value;
+      
+      const filtered = latestRows.filter(row => {
+        // Filtros por coluna
+        for (const [col, filterVal] of Object.entries(columnFilters)) {
+          if (filterVal && String(row[col]).trim() !== filterVal) return false;
+        }
+        
+        // Filtro de agência
+        if (agenciaFilter) {
+          const dep = getColumn(row, 'Dependência');
+          if (dep !== agenciaFilter) return false;
+        }
+        
         return true;
       });
-
-      const mode = viewMode.value;
+      
+      const mode = document.getElementById('viewMode').value;
       if (mode === 'consolidated') {
         renderConsolidated(filtered);
       } else {
         renderTable(filtered);
       }
-
+      
+      updateStats(filtered);
       renderAgencias(filtered);
-      renderSituacaoPorAgencia(filtered);
-      renderRemovidas(depSel, sitSel, estSel, superSel);
-      renderSituacaoEvolucao(depSel, sitSel, estSel, superSel, propostaBusca, clienteBusca);
-
-      cardQtd.textContent = filtered.length.toString();
-      const soma = filtered.reduce((acc, row) => {
-        const v = getColumn(row, 'Valor');
-        return acc + parseNumber(v);
-      }, 0);
-      cardValor.textContent = soma.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL"
-      });
-      cardRemovidas.textContent = removedProposals.length.toString();
+      renderSituacaoAgencia(filtered);
+      renderRemovidas(filtered);
     }
-
-    function getEvolutionInfo(proposta, currentSituacao) {
-      const hist = proposalHistory[proposta];
-      
-      if (!hist || hist.length === 0) {
-        return { type: 'nova', previousSituacao: null, currentSituacao };
-      }
-      
-      // Verifica se existe em versão anterior
-      const previousVersions = hist.filter(h => h.dsIndex < latestIndex);
-      
-      if (previousVersions.length === 0) {
-        return { type: 'nova', previousSituacao: null, currentSituacao };
-      }
-      
-      // Pega a situação da versão anterior mais recente
-      const lastPrevious = previousVersions.sort((a, b) => b.dsIndex - a.dsIndex)[0];
-      const previousSituacao = lastPrevious.situacao;
-      
-      if (previousSituacao !== currentSituacao && previousSituacao && currentSituacao) {
-        return { type: 'alterada', previousSituacao, currentSituacao };
-      }
-      
-      return { type: 'mantida', previousSituacao, currentSituacao };
-    }
-
+    
+    document.getElementById('viewMode').addEventListener('change', applyFilters);
+    
+    // === RENDERING ===
     function renderTable(rows) {
-      tableHead.innerHTML = `
-        <tr>
-          <th class="px-3 py-3 text-left">Prefixo</th>
-          <th class="px-3 py-3 text-left">Proposta</th>
-          <th class="px-3 py-3 text-left">Cliente</th>
-          <th class="px-3 py-3 text-left">Situação</th>
-          <th class="px-3 py-3 text-left">Dependência</th>
-          <th class="px-3 py-3 text-right">Valor Total</th>
-          <th class="px-3 py-3 text-left">Estado</th>
-          <th class="px-3 py-3 text-left">Super</th>
-          <th class="px-3 py-3 text-left">Evolução</th>
-        </tr>
-      `;
-
-      tableBody.innerHTML = "";
+      const tableHead = document.getElementById('tableHead');
+      const tableBody = document.getElementById('tableBody');
+      
+      const visibleCols = allColumns.filter(col => visibleColumns.has(col));
+      
+      tableHead.innerHTML = visibleCols.map(col => `<th>${col}</th>`).join('') + '<th>Evolução</th>';
+      tableBody.innerHTML = '';
       
       if (!rows.length) {
-        tableBody.innerHTML = `
-          <tr>
-            <td colspan="9" class="py-6 px-3 text-center text-gray-600 text-sm font-bold">
-              Nenhuma proposta encontrada com os filtros aplicados.
-            </td>
-          </tr>`;
+        tableBody.innerHTML = `<tr><td colspan="${visibleCols.length + 1}" style="text-align: center; padding: 2rem; color: var(--text-secondary);">Nenhuma proposta encontrada</td></tr>`;
         return;
       }
       
-      rows.forEach((row) => {
+      rows.forEach(row => {
+        const tr = document.createElement('tr');
+        
+        visibleCols.forEach(col => {
+          const td = document.createElement('td');
+          const val = row[col];
+          
+          if (col.toLowerCase().includes('valor')) {
+            td.style.textAlign = 'right';
+            td.style.fontWeight = '700';
+            td.textContent = parseNumber(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          } else {
+            td.textContent = val || '-';
+          }
+          
+          tr.appendChild(td);
+        });
+        
+        // Evolução
+        const tdEvol = document.createElement('td');
         const proposta = String(getColumn(row, 'Proposta')).trim();
-        const cliente = getColumn(row, 'Cliente');
-        const prefixo = getColumn(row, 'Prefixo');
-        const dep = getColumn(row, 'Dependência');
         const sit = getColumn(row, 'Situação');
-        const est = getColumn(row, 'Estado');
-        const sup = getColumn(row, 'SuperComercial');
-        const valor = getColumn(row, 'Valor');
-
         const evolution = getEvolutionInfo(proposta, sit);
-        let evolHTML = '';
         
         if (evolution.type === 'nova') {
-          evolHTML = `<span class="badge text-white border-2 bg-green-600 border-green-700">Nova</span>`;
+          tdEvol.innerHTML = '<span class="badge badge-success">Nova</span>';
         } else if (evolution.type === 'alterada') {
-          evolHTML = `
-            <div class="evolution-badge">
-              <span class="text-[0.65rem] text-gray-600">Anterior: <strong>${evolution.previousSituacao || '-'}</strong></span>
+          tdEvol.innerHTML = `
+            <div class="evolution-info">
+              <span style="color: var(--text-secondary);">${evolution.previousSituacao}</span>
               <div class="evolution-arrow">
-                <i data-lucide="arrow-down" class="w-3 h-3 text-blue-600"></i>
-                <span class="text-blue-600">Atual: <strong>${evolution.currentSituacao || '-'}</strong></span>
+                <i data-lucide="arrow-down" style="width: 0.875rem; height: 0.875rem;"></i>
+                ${evolution.currentSituacao}
               </div>
             </div>
           `;
         } else {
-          evolHTML = `<span class="badge text-amber-900 border-2 bg-amber-200 border-amber-400">Mantida</span>`;
+          tdEvol.innerHTML = '<span class="badge badge-warning">Mantida</span>';
         }
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="px-3 py-2 font-mono font-bold" style="color: var(--agro-brown);">${prefixo || "-"}</td>
-          <td class="px-3 py-2 font-black" style="color: var(--agro-green-dark);">${proposta || "-"}</td>
-          <td class="px-3 py-2 font-semibold text-gray-800">${cliente || "-"}</td>
-          <td class="px-3 py-2 font-semibold text-gray-700">${sit || "-"}</td>
-          <td class="px-3 py-2 font-semibold text-gray-800">${dep || "-"}</td>
-          <td class="px-3 py-2 text-right font-black" style="color: var(--agro-green-dark);">
-            ${parseNumber(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-          </td>
-          <td class="px-3 py-2 font-semibold text-gray-700">${est || "-"}</td>
-          <td class="px-3 py-2 font-semibold text-gray-700">${sup || "-"}</td>
-          <td class="px-3 py-2">${evolHTML}</td>
-        `;
+        
+        tr.appendChild(tdEvol);
         tableBody.appendChild(tr);
       });
       
       lucide.createIcons();
     }
-
+    
     function renderConsolidated(rows) {
+      const tableHead = document.getElementById('tableHead');
+      const tableBody = document.getElementById('tableBody');
+      
       tableHead.innerHTML = `
-        <tr>
-          <th class="px-3 py-3 text-left">Agência (Dependência)</th>
-          <th class="px-3 py-3 text-center">Quantidade</th>
-          <th class="px-3 py-3 text-right">Valor Total</th>
-          <th class="px-3 py-3 text-center">Novas</th>
-          <th class="px-3 py-3 text-center">Mantidas</th>
-          <th class="px-3 py-3 text-center">Alteradas</th>
-        </tr>
+        <th>Agência</th>
+        <th style="text-align: center;">Quantidade</th>
+        <th style="text-align: right;">Valor Total</th>
+        <th style="text-align: center;">Novas</th>
+        <th style="text-align: center;">Mantidas</th>
+        <th style="text-align: center;">Alteradas</th>
       `;
-
-      tableBody.innerHTML = "";
       
-      if (!rows.length) {
-        tableBody.innerHTML = `
-          <tr>
-            <td colspan="6" class="py-6 px-3 text-center text-gray-600 text-sm font-bold">
-              Nenhuma proposta encontrada com os filtros aplicados.
-            </td>
-          </tr>`;
-        return;
-      }
-
+      tableBody.innerHTML = '';
+      
       const consolidated = {};
-      
-      rows.forEach((row) => {
-        const dep = getColumn(row, 'Dependência') || "Sem identificação";
+      rows.forEach(row => {
+        const dep = getColumn(row, 'Dependência') || 'Sem identificação';
         const valor = parseNumber(getColumn(row, 'Valor'));
         const proposta = String(getColumn(row, 'Proposta')).trim();
         const sit = getColumn(row, 'Situação');
@@ -1311,439 +998,207 @@
           consolidated[dep] = { qtd: 0, valor: 0, novas: 0, mantidas: 0, alteradas: 0 };
         }
         
-        consolidated[dep].qtd += 1;
+        consolidated[dep].qtd++;
         consolidated[dep].valor += valor;
         
         const evolution = getEvolutionInfo(proposta, sit);
-        if (evolution.type === 'nova') {
-          consolidated[dep].novas += 1;
-        } else if (evolution.type === 'alterada') {
-          consolidated[dep].alteradas += 1;
-        } else {
-          consolidated[dep].mantidas += 1;
-        }
+        if (evolution.type === 'nova') consolidated[dep].novas++;
+        else if (evolution.type === 'alterada') consolidated[dep].alteradas++;
+        else consolidated[dep].mantidas++;
       });
-
+      
       Object.entries(consolidated)
         .sort((a, b) => b[1].valor - a[1].valor)
         .forEach(([dep, data]) => {
-          const tr = document.createElement("tr");
+          const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td class="px-3 py-2 font-black text-gray-800">${dep}</td>
-            <td class="px-3 py-2 text-center">
-              <span class="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-white font-black text-sm border-2" style="background-color: var(--agro-green); border-color: var(--agro-green-dark);">
-                ${data.qtd}
-              </span>
-            </td>
-            <td class="px-3 py-2 text-right font-black" style="color: var(--agro-green-dark);">
-              ${data.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-            </td>
-            <td class="px-3 py-2 text-center">
-              <span class="badge text-white border-2 bg-green-600 border-green-700">
-                ${data.novas}
-              </span>
-            </td>
-            <td class="px-3 py-2 text-center">
-              <span class="badge text-amber-900 border-2 bg-amber-200 border-amber-400">
-                ${data.mantidas}
-              </span>
-            </td>
-            <td class="px-3 py-2 text-center">
-              <span class="badge text-blue-900 border-2 bg-blue-200 border-blue-400">
-                ${data.alteradas}
-              </span>
-            </td>
+            <td style="font-weight: 600;">${dep}</td>
+            <td style="text-align: center;"><span class="badge badge-info">${data.qtd}</span></td>
+            <td style="text-align: right; font-weight: 700;">${data.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td style="text-align: center;"><span class="badge badge-success">${data.novas}</span></td>
+            <td style="text-align: center;"><span class="badge badge-warning">${data.mantidas}</span></td>
+            <td style="text-align: center;"><span class="badge badge-info">${data.alteradas}</span></td>
           `;
           tableBody.appendChild(tr);
         });
     }
-
-    function renderAgencias(rows) {
-      agenciaBody.innerHTML = "";
-      const mapa = {};
-      rows.forEach((row) => {
-        const dep = getColumn(row, 'Dependência') || "Sem identificação";
-        const val = parseNumber(getColumn(row, 'Valor'));
-        if (!mapa[dep]) mapa[dep] = { qtd: 0, soma: 0 };
-        mapa[dep].qtd += 1;
-        mapa[dep].soma += val;
-      });
-
-      Object.entries(mapa)
-        .sort((a, b) => b[1].soma - a[1].soma)
-        .forEach(([dep, info]) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td class="py-2 px-3 font-black text-gray-800">${dep}</td>
-            <td class="py-2 px-3 text-center">
-              <span class="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-white font-black text-sm border-2" style="background-color: var(--agro-green); border-color: var(--agro-green-dark);">
-                ${info.qtd}
-              </span>
-            </td>
-            <td class="py-2 px-3 text-right font-black" style="color: var(--agro-green-dark);">
-              ${info.soma.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-            </td>
-          `;
-          agenciaBody.appendChild(tr);
-        });
-
-      if (!Object.keys(mapa).length) {
-        agenciaBody.innerHTML = `
-          <tr><td colspan="3" class="py-4 px-3 text-center text-gray-600 text-xs font-bold">
-            Sem dados para os filtros atuais.
-          </td></tr>`;
+    
+    function getEvolutionInfo(proposta, currentSituacao) {
+      const hist = proposalHistory[proposta];
+      if (!hist || !hist.length) return { type: 'nova', previousSituacao: null, currentSituacao };
+      
+      const previousVersions = hist.filter(h => h.dsIndex < latestIndex);
+      if (!previousVersions.length) return { type: 'nova', previousSituacao: null, currentSituacao };
+      
+      const lastPrev = previousVersions.sort((a, b) => b.dsIndex - a.dsIndex)[0];
+      const prevSit = lastPrev.situacao;
+      
+      if (prevSit !== currentSituacao && prevSit && currentSituacao) {
+        return { type: 'alterada', previousSituacao: prevSit, currentSituacao };
       }
+      
+      return { type: 'mantida', previousSituacao: prevSit, currentSituacao };
     }
-
-    function renderSituacaoPorAgencia(rows) {
-      situacaoPorAgenciaHead.innerHTML = "";
-      situacaoPorAgenciaBody.innerHTML = "";
-
-      if (!rows.length) {
-        situacaoPorAgenciaBody.innerHTML = `
-          <tr><td colspan="100%" class="py-4 px-3 text-center text-gray-600 text-xs font-bold">
-            Sem dados para exibir.
-          </td></tr>`;
-        return;
-      }
-
+    
+    function updateStats(rows) {
+      const total = rows.length;
+      const valor = rows.reduce((acc, row) => acc + parseNumber(getColumn(row, 'Valor')), 0);
+      
+      let novas = 0;
+      rows.forEach(row => {
+        const proposta = String(getColumn(row, 'Proposta')).trim();
+        const sit = getColumn(row, 'Situação');
+        const evolution = getEvolutionInfo(proposta, sit);
+        if (evolution.type === 'nova') novas++;
+      });
+      
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statValor').textContent = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      document.getElementById('statNovas').textContent = novas;
+      document.getElementById('statRemovidas').textContent = removedProposals.length;
+    }
+    
+    function renderAgencias(rows) {
+      const body = document.getElementById('agenciaBody');
+      body.innerHTML = '';
+      
+      const map = {};
+      rows.forEach(row => {
+        const dep = getColumn(row, 'Dependência') || 'Sem identificação';
+        const val = parseNumber(getColumn(row, 'Valor'));
+        if (!map[dep]) map[dep] = { qtd: 0, valor: 0 };
+        map[dep].qtd++;
+        map[dep].valor += val;
+      });
+      
+      Object.entries(map)
+        .sort((a, b) => b[1].valor - a[1].valor)
+        .forEach(([dep, data]) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="font-weight: 600;">${dep}</td>
+            <td style="text-align: center;"><span class="badge badge-info">${data.qtd}</span></td>
+            <td style="text-align: right; font-weight: 700;">${data.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+          `;
+          body.appendChild(tr);
+        });
+    }
+    
+    function renderSituacaoAgencia(rows) {
+      const head = document.getElementById('situacaoAgenciaHead');
+      const body = document.getElementById('situacaoAgenciaBody');
+      
+      head.innerHTML = '';
+      body.innerHTML = '';
+      
+      if (!rows.length) return;
+      
       const matrix = {};
       const situacoes = new Set();
       
-      rows.forEach((row) => {
-        const dep = getColumn(row, 'Dependência') || "Sem identificação";
-        const sit = String(getColumn(row, 'Situação')).trim() || "Sem situação";
-        
+      rows.forEach(row => {
+        const dep = getColumn(row, 'Dependência') || 'Sem identificação';
+        const sit = String(getColumn(row, 'Situação')).trim() || 'Sem situação';
         situacoes.add(sit);
-        
         if (!matrix[dep]) matrix[dep] = {};
         if (!matrix[dep][sit]) matrix[dep][sit] = 0;
-        matrix[dep][sit] += 1;
+        matrix[dep][sit]++;
       });
-
-      const situacoesArray = Array.from(situacoes).sort();
-
-      let headHtml = "<tr><th class='py-2 px-3 text-left'>Agência</th>";
-      situacoesArray.forEach(sit => {
-        headHtml += `<th class="py-2 px-3 text-center text-[0.7rem]">${sit}</th>`;
-      });
-      headHtml += "<th class='py-2 px-3 text-center font-black'>Total</th></tr>";
-      situacaoPorAgenciaHead.innerHTML = headHtml;
-
-      Object.entries(matrix)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .forEach(([dep, sits]) => {
-          let total = 0;
-          let rowHtml = `<tr><td class="py-2 px-3 font-black text-gray-800">${dep}</td>`;
-          
-          situacoesArray.forEach(sit => {
-            const count = sits[sit] || 0;
-            total += count;
-            const cellClass = count > 0 ? "font-black" : "text-gray-400 font-semibold";
-            const cellStyle = count > 0 ? `background-color: var(--agro-beige); color: var(--agro-green-dark);` : '';
-            rowHtml += `<td class="py-2 px-3 text-center ${cellClass}" style="${cellStyle}">${count || "-"}</td>`;
-          });
-          
-          rowHtml += `<td class="py-2 px-3 text-center font-black text-white" style="background-color: var(--agro-green);">${total}</td></tr>`;
-          situacaoPorAgenciaBody.insertAdjacentHTML("beforeend", rowHtml);
+      
+      const sitArray = Array.from(situacoes).sort();
+      
+      let headHTML = '<tr><th>Agência</th>';
+      sitArray.forEach(sit => headHTML += `<th style="text-align: center; font-size: 0.7rem;">${sit}</th>`);
+      headHTML += '<th style="text-align: center;">Total</th></tr>';
+      head.innerHTML = headHTML;
+      
+      Object.entries(matrix).forEach(([dep, sits]) => {
+        let total = 0;
+        let rowHTML = `<tr><td style="font-weight: 600;">${dep}</td>`;
+        sitArray.forEach(sit => {
+          const count = sits[sit] || 0;
+          total += count;
+          rowHTML += `<td style="text-align: center;">${count || '-'}</td>`;
         });
-    }
-
-    function renderRemovidas(depSel, sitSel, estSel, superSel) {
-      removidasBody.innerHTML = "";
-
-      const filtradas = removedProposals.filter(({ row }) => {
-        const dep = String(getColumn(row, 'Dependência')).trim();
-        const sit = String(getColumn(row, 'Situação')).trim();
-        const est = String(getColumn(row, 'Estado')).trim();
-        const sup = String(getColumn(row, 'SuperComercial')).trim();
-
-        if (depSel && dep !== depSel) return false;
-        if (sitSel && sit !== sitSel) return false;
-        if (estSel && est !== estSel) return false;
-        if (superSel && sup !== superSel) return false;
-        return true;
+        rowHTML += `<td style="text-align: center; font-weight: 700;">${total}</td></tr>`;
+        body.innerHTML += rowHTML;
       });
-
-      filtradas.slice(0, 150).forEach(({ proposta, row }) => {
-        const cliente = getColumn(row, 'Cliente');
-        const dep = getColumn(row, 'Dependência');
-        const val = getColumn(row, 'Valor');
-        const tr = document.createElement("tr");
+    }
+    
+    function renderRemovidas(filteredRows) {
+      const body = document.getElementById('removidasBody');
+      body.innerHTML = '';
+      
+      removedProposals.slice(0, 50).forEach(({ proposta, row }) => {
+        const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="py-2 px-3 text-red-700 font-black">${proposta}</td>
-          <td class="py-2 px-3 text-gray-800 font-semibold">${cliente || "-"}</td>
-          <td class="py-2 px-3 text-gray-700 font-semibold">${dep || "-"}</td>
-          <td class="py-2 px-3 text-right font-black text-gray-800">
-            ${parseNumber(val).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-          </td>
+          <td style="font-weight: 700; color: #dc2626;">${proposta}</td>
+          <td>${getColumn(row, 'Cliente') || '-'}</td>
+          <td style="text-align: right; font-weight: 700;">${parseNumber(getColumn(row, 'Valor')).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
         `;
-        removidasBody.appendChild(tr);
+        body.appendChild(tr);
       });
-
-      if (!filtradas.length) {
-        removidasBody.innerHTML = `
-          <tr><td colspan="4" class="py-4 px-3 text-center text-gray-600 text-xs font-bold">
-            Nenhuma proposta removida dentro dos filtros atuais.
-          </td></tr>`;
+      
+      if (!removedProposals.length) {
+        body.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 1rem; color: var(--text-secondary);">Nenhuma proposta removida</td></tr>';
       }
     }
-
-    function renderSituacaoEvolucao(depSel, sitSel, estSel, superSel, propostaBusca, clienteBusca) {
-      situacaoEvolHead.innerHTML = "";
-      situacaoEvolBody.innerHTML = "";
-
-      if (!datasets.length) return;
-
-      const situacaoMap = {};
-
-      datasets.forEach((ds, idx) => {
-        (ds.rows || []).forEach((row) => {
-          const dep = String(getColumn(row, 'Dependência')).trim();
-          const sit = String(getColumn(row, 'Situação')).trim() || "Sem situação";
-          const est = String(getColumn(row, 'Estado')).trim();
-          const sup = String(getColumn(row, 'SuperComercial')).trim();
-          const proposta = String(getColumn(row, 'Proposta')).trim().toLowerCase();
-          const cliente = String(getColumn(row, 'Cliente')).trim().toLowerCase();
-
-          if (depSel && dep !== depSel) return;
-          if (sitSel && sit !== sitSel) return;
-          if (estSel && est !== estSel) return;
-          if (superSel && sup !== superSel) return;
-          if (propostaBusca && !proposta.includes(propostaBusca)) return;
-          if (clienteBusca && !cliente.includes(clienteBusca)) return;
-
-          if (!situacaoMap[sit]) {
-            situacaoMap[sit] = Array(datasets.length).fill(0);
-          }
-          situacaoMap[sit][idx] += 1;
-        });
-      });
-
-      const situacoes = Object.keys(situacaoMap).sort();
-
-      let headHtml = "<tr><th class='py-2 px-3 text-left'>Situação</th>";
-      datasets.forEach((ds, idx) => {
-        const label = ds.name.replace(/\.xlsx$/i, "").substring(0, 20);
-        const isLatest = idx === latestIndex;
-        headHtml += `<th class="py-2 px-3 text-right text-[0.7rem] ${isLatest ? 'font-black' : ''}">${isLatest ? '★ ' : ''}${label}</th>`;
-      });
-      headHtml += "</tr>";
-      situacaoEvolHead.innerHTML = headHtml;
-
-      if (!situacoes.length) {
-        situacaoEvolBody.innerHTML = `
-          <tr>
-            <td colspan="${datasets.length + 1}" class="py-4 px-3 text-center text-gray-600 text-xs font-bold">
-              Sem dados para exibir.
-            </td>
-          </tr>
-        `;
-        return;
-      }
-
-      situacoes.forEach((sit) => {
-        const counts = situacaoMap[sit];
-        let rowHtml = `<tr><td class="py-2 px-3 font-black text-gray-800">${sit}</td>`;
-        counts.forEach((count, idx) => {
-          const isLatest = idx === latestIndex;
-          const cls = isLatest ? "font-black" : "font-semibold text-gray-700";
-          const style = isLatest ? `background-color: var(--agro-beige); color: var(--agro-green-dark);` : '';
-          rowHtml += `<td class="py-2 px-3 text-right ${cls}" style="${style}">${count}</td>`;
-        });
-        rowHtml += "</tr>";
-        situacaoEvolBody.insertAdjacentHTML("beforeend", rowHtml);
-      });
-    }
-
-    function updateFileInfo() {
-      if (!datasets.length || latestIndex < 0) {
-        fileInfo.textContent = "";
-        latestLabel.textContent = "";
-        return;
-      }
-      const names = datasets.map((d, i) =>
-        `${i === latestIndex ? "★ " : ""}${d.name}`
-      );
-      fileInfo.innerHTML = `<span class="flex items-center gap-1"><i data-lucide="folder" class="w-3.5 h-3.5"></i> ${names.join(" • ")}</span>`;
-      latestLabel.textContent = "📊 Base atual: " + datasets[latestIndex].name;
-      lucide.createIcons();
-    }
-
-    function resetUI() {
-      latestIndex = -1;
-      latestRows = [];
-      columnMapping = {};
-      tableBody.innerHTML = "";
-      agenciaBody.innerHTML = "";
-      situacaoPorAgenciaHead.innerHTML = "";
-      situacaoPorAgenciaBody.innerHTML = "";
-      removidasBody.innerHTML = "";
-      situacaoEvolHead.innerHTML = "";
-      situacaoEvolBody.innerHTML = "";
-      fileInfo.textContent = "";
-      latestLabel.textContent = "";
-      cardQtd.textContent = "-";
-      cardValor.textContent = "-";
-      cardRemovidas.textContent = "-";
-    }
-
-    btnExportCSV.addEventListener("click", () => {
-      if (latestIndex < 0 || !latestRows || !latestRows.length) return;
-
-      const depSel = filterDependencia.value.trim();
-      const sitSel = filterSituacao.value.trim();
-      const estSel = filterEstado.value.trim();
-      const superSel = filterSuper.value.trim();
-      const propostaBusca = filterProposta.value.trim().toLowerCase();
-      const clienteBusca = filterCliente.value.trim().toLowerCase();
-      const agenciaEspecifica = filterAgenciaEspecifica.value.trim();
-
-      const filtered = latestRows.filter((row) => {
-        const dep = String(getColumn(row, 'Dependência')).trim();
-        const sit = String(getColumn(row, 'Situação')).trim();
-        const est = String(getColumn(row, 'Estado')).trim();
-        const sup = String(getColumn(row, 'SuperComercial')).trim();
-        const proposta = String(getColumn(row, 'Proposta')).trim().toLowerCase();
-        const cliente = String(getColumn(row, 'Cliente')).trim().toLowerCase();
-
-        if (depSel && dep !== depSel) return false;
-        if (sitSel && sit !== sitSel) return false;
-        if (estSel && est !== estSel) return false;
-        if (superSel && sup !== superSel) return false;
-        if (propostaBusca && !proposta.includes(propostaBusca)) return false;
-        if (clienteBusca && !cliente.includes(clienteBusca)) return false;
-        if (agenciaEspecifica && dep !== agenciaEspecifica) return false;
-
+    
+    // === EXPORT ===
+    document.getElementById('btnExportCSV').addEventListener('click', () => {
+      if (!latestRows.length) return;
+      
+      const agenciaFilter = document.getElementById('filterAgencia').value;
+      const filtered = latestRows.filter(row => {
+        for (const [col, filterVal] of Object.entries(columnFilters)) {
+          if (filterVal && String(row[col]).trim() !== filterVal) return false;
+        }
+        if (agenciaFilter && getColumn(row, 'Dependência') !== agenciaFilter) return false;
         return true;
       });
-
-      const mode = viewMode.value;
-      let lines = [];
-
-      if (mode === 'consolidated') {
-        const header = ["Agência", "Quantidade", "Valor Total", "Novas", "Mantidas", "Alteradas"];
-        lines.push(header.join(";"));
-
-        const consolidated = {};
-        filtered.forEach((row) => {
-          const dep = getColumn(row, 'Dependência') || "Sem identificação";
-          const valor = parseNumber(getColumn(row, 'Valor'));
-          const proposta = String(getColumn(row, 'Proposta')).trim();
-          const sit = getColumn(row, 'Situação');
-          
-          if (!consolidated[dep]) {
-            consolidated[dep] = { qtd: 0, valor: 0, novas: 0, mantidas: 0, alteradas: 0 };
-          }
-          
-          consolidated[dep].qtd += 1;
-          consolidated[dep].valor += valor;
-          
-          const evolution = getEvolutionInfo(proposta, sit);
-          if (evolution.type === 'nova') {
-            consolidated[dep].novas += 1;
-          } else if (evolution.type === 'alterada') {
-            consolidated[dep].alteradas += 1;
-          } else {
-            consolidated[dep].mantidas += 1;
-          }
+      
+      const visibleCols = allColumns.filter(col => visibleColumns.has(col));
+      const header = [...visibleCols, 'Tipo Evolução', 'Situação Anterior'];
+      const lines = [header.join(';')];
+      
+      filtered.forEach(row => {
+        const proposta = String(getColumn(row, 'Proposta')).trim();
+        const sit = getColumn(row, 'Situação');
+        const evolution = getEvolutionInfo(proposta, sit);
+        
+        const values = visibleCols.map(col => {
+          const val = row[col];
+          return `"${String(val || '').replace(/"/g, '""')}"`;
         });
-
-        Object.entries(consolidated)
-          .sort((a, b) => b[1].valor - a[1].valor)
-          .forEach(([dep, data]) => {
-            const values = [
-              dep,
-              data.qtd,
-              data.valor.toString().replace(".", ","),
-              data.novas,
-              data.mantidas,
-              data.alteradas
-            ].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`);
-            lines.push(values.join(";"));
-          });
-      } else {
-        const header = [
-          "Prefixo",
-          "Proposta",
-          "Cliente",
-          "Situação Atual",
-          "Dependência",
-          "Valor Total",
-          "Estado",
-          "Super Comercial",
-          "Tipo Evolução",
-          "Situação Anterior"
-        ];
-        lines.push(header.join(";"));
-
-        filtered.forEach((row) => {
-          const proposta = String(getColumn(row, 'Proposta')).trim();
-          const sit = getColumn(row, 'Situação');
-          const evolution = getEvolutionInfo(proposta, sit);
-          
-          let tipoEvolucao = '';
-          let sitAnterior = '';
-          
-          if (evolution.type === 'nova') {
-            tipoEvolucao = 'Nova';
-          } else if (evolution.type === 'alterada') {
-            tipoEvolucao = 'Alterada';
-            sitAnterior = evolution.previousSituacao || '';
-          } else {
-            tipoEvolucao = 'Mantida';
-            sitAnterior = evolution.previousSituacao || sit;
-          }
-
-          const values = [
-            getColumn(row, 'Prefixo'),
-            proposta,
-            getColumn(row, 'Cliente'),
-            sit,
-            getColumn(row, 'Dependência'),
-            parseNumber(getColumn(row, 'Valor')).toString().replace(".", ","),
-            getColumn(row, 'Estado'),
-            getColumn(row, 'SuperComercial'),
-            tipoEvolucao,
-            sitAnterior
-          ].map((v) =>
-            `"${String(v ?? "").replace(/"/g, '""')}"`
-          );
-          lines.push(values.join(";"));
-        });
-      }
-
-      const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+        
+        values.push(`"${evolution.type}"`);
+        values.push(`"${evolution.previousSituacao || ''}"`);
+        
+        lines.push(values.join(';'));
+      });
+      
+      const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = "propostas_filtradas.csv";
-      document.body.appendChild(a);
+      a.download = 'propostas.csv';
       a.click();
-      document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      addLog("✓ CSV exportado com sucesso", 'success');
+      addLog('✓ CSV exportado', 'success');
     });
-
-    btnExportPNG.addEventListener("click", () => {
-      addLog("📸 Gerando imagem PNG...", 'info');
-      const dash = document.getElementById("dashboard");
-      html2canvas(dash, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#f5f1e8"
-      }).then((canvas) => {
-        canvas.toBlob((blob) => {
+    
+    document.getElementById('btnExportPNG').addEventListener('click', () => {
+      addLog('📸 Gerando PNG...', 'info');
+      html2canvas(document.body, { scale: 2 }).then(canvas => {
+        canvas.toBlob(blob => {
           const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
+          const a = document.createElement('a');
           a.href = url;
-          a.download = "painel_propostas.png";
-          document.body.appendChild(a);
+          a.download = 'painel.png';
           a.click();
-          document.body.removeChild(a);
           URL.revokeObjectURL(url);
-          addLog("✓ PNG exportado com sucesso", 'success');
+          addLog('✓ PNG exportado', 'success');
         });
       });
     });
