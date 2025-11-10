@@ -390,7 +390,7 @@
       <div id="logContent"></div>
     </div>
 
-    <!-- Cards de Resumo (dinâmicos pelos filtros) -->
+    <!-- Cards Resumo -->
     <div class="grid grid-cols-4" style="margin-bottom: 1.5rem;">
       <div class="stat-card">
         <div class="stat-label">Total de Propostas</div>
@@ -414,7 +414,7 @@
       </div>
     </div>
 
-    <!-- Filtros e Seletor de Colunas -->
+    <!-- Filtros + Colunas -->
     <div class="grid" style="grid-template-columns: 2fr 1fr; margin-bottom: 1.5rem;">
       <!-- Filtros -->
       <div class="filter-section">
@@ -431,7 +431,7 @@
         <div id="filtersContainer" class="grid grid-cols-3"></div>
       </div>
 
-      <!-- Seletor de Colunas -->
+      <!-- Colunas Visíveis -->
       <div class="filter-section">
         <h2 class="section-title">
           <i data-lucide="columns" style="width: 1.25rem; height: 1.25rem;"></i>
@@ -441,7 +441,7 @@
       </div>
     </div>
 
-    <!-- Controles de Visualização e Exportação -->
+    <!-- Modo de Visualização / Filtro Agência / Export -->
     <div class="card" style="padding: 1rem; margin-bottom: 1.5rem;">
       <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 200px;">
@@ -453,11 +453,12 @@
             <option value="consolidated">Consolidado por Agência</option>
           </select>
         </div>
-        <div style="flex: 1; min-width: 200px;">
+        <div style="flex: 1; min-width: 220px;">
           <label style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">
-            FILTRAR POR AGÊNCIA
+            FILTRAR POR AGÊNCIA / PREFIXO (MÚLTIPLO)
           </label>
-          <select id="filterAgencia" class="input">
+          <!-- ALTERADO: multiple -->
+          <select id="filterAgencia" class="input" multiple size="4">
             <option value="">Todas as Agências</option>
           </select>
         </div>
@@ -492,14 +493,13 @@
 
     <!-- Painéis Adicionais -->
     <div class="grid grid-cols-3">
-      <!-- Total por Agência -->
+      <!-- Por Agência -->
       <div id="agenciaCard" class="card" style="padding: 1.5rem;">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
           <h2 class="section-title" style="margin-bottom:0;">
             <i data-lucide="building-2" style="width: 1.25rem; height: 1.25rem;"></i>
             Por Agência
           </h2>
-          <!-- NOVO: Export Por Agência -->
           <div style="display:flex; gap:0.25rem; flex-wrap:wrap;">
             <button id="btnExportAgenciaCSV" class="btn btn-secondary" style="padding:0.25rem 0.5rem; font-size:0.7rem;">
               CSV
@@ -523,7 +523,7 @@
         </div>
       </div>
 
-      <!-- Situação por Agência -->
+      <!-- Situação/Agência -->
       <div class="card" style="padding: 1.5rem;">
         <h2 class="section-title">
           <i data-lucide="pie-chart" style="width: 1.25rem; height: 1.25rem;"></i>
@@ -562,7 +562,7 @@
   <script>
     lucide.createIcons();
     
-    // === LOG SYSTEM ===
+    // LOG
     const logContainer = document.getElementById("logContainer");
     const logContent = document.getElementById("logContent");
     const clearLog = document.getElementById("clearLog");
@@ -582,7 +582,7 @@
       logContainer.classList.add('hidden');
     });
     
-    // === GLOBAL STATE ===
+    // ESTADO GLOBAL
     let datasets = [];
     let latestIndex = -1;
     let latestRows = [];
@@ -592,9 +592,9 @@
     let allColumns = [];
     let visibleColumns = new Set();
     let columnFilters = {};
-    let currentFilteredRows = []; // NOVO: mantém o recorte atual para uso em todos os painéis/exports
+    let currentFilteredRows = [];
     
-    // === COLUMN DETECTION ===
+    // HEADER DETECTION
     function detectHeaderRow(sheet) {
       addLog("🔍 Detectando cabeçalhos...", 'info');
       
@@ -646,7 +646,6 @@
       return 1;
     }
     
-    // Função melhorada para buscar valores de colunas
     function getColumnValue(row, type) {
       if (columnMapping[type]) {
         const mappedName = columnMapping[type];
@@ -707,7 +706,6 @@
       return isNaN(n) ? 0 : n;
     }
     
-    // === FILE PROCESSING ===
     const fileInput = document.getElementById("fileInput");
     
     fileInput.addEventListener("change", async (e) => {
@@ -754,7 +752,7 @@
       initializeVisibleColumns();
       buildColumnSelector();
       buildFilters();
-      applyFilters(); // já alimenta currentFilteredRows
+      applyFilters();
       
       addLog("✓ Processamento concluído!", 'success');
       
@@ -830,7 +828,7 @@
       visibleColumns = new Set(allColumns);
     }
     
-    // === COLUMN SELECTOR ===
+    // Seletor de Colunas
     function buildColumnSelector() {
       const selector = document.getElementById("columnSelector");
       selector.innerHTML = '';
@@ -886,7 +884,7 @@
       }
     }
     
-    // === FILTERS ===
+    // Filtros
     function buildFilters() {
       const container = document.getElementById("filtersContainer");
       container.innerHTML = '';
@@ -920,7 +918,7 @@
         });
       });
       
-      // Filtro especial para agência
+      // Filtro especial por agência (multi)
       const filterAgencia = document.getElementById('filterAgencia');
       const agencias = new Set();
       latestRows.forEach(row => {
@@ -942,29 +940,41 @@
     document.getElementById('clearFilters').addEventListener('click', () => {
       columnFilters = {};
       document.querySelectorAll('.filter-select').forEach(sel => sel.value = '');
-      document.getElementById('filterAgencia').value = '';
+      const filterAgencia = document.getElementById('filterAgencia');
+      Array.from(filterAgencia.options).forEach(opt => {
+        opt.selected = (opt.value === '');
+      });
       applyFilters();
     });
+    
+    function getSelectedAgencias() {
+      const select = document.getElementById('filterAgencia');
+      if (!select) return [];
+      const values = Array.from(select.selectedOptions)
+        .map(o => o.value)
+        .filter(v => v);
+      return values;
+    }
     
     function applyFilters() {
       if (!latestRows.length) return;
       
-      const agenciaFilter = document.getElementById('filterAgencia').value;
+      const agenciasSelecionadas = getSelectedAgencias();
       
       const filtered = latestRows.filter(row => {
-        // Filtros por coluna
         for (const [col, filterVal] of Object.entries(columnFilters)) {
           if (filterVal && String(row[col]).trim() !== filterVal) return false;
         }
-        // Filtro de agência
-        if (agenciaFilter) {
+        
+        if (agenciasSelecionadas.length) {
           const dep = getColumnValue(row, 'Dependência');
-          if (dep !== agenciaFilter) return false;
+          if (!agenciasSelecionadas.includes(dep)) return false;
         }
+        
         return true;
       });
       
-      currentFilteredRows = filtered; // NOVO: guarda o recorte atual
+      currentFilteredRows = filtered;
       
       const mode = document.getElementById('viewMode').value;
       if (mode === 'consolidated') {
@@ -976,12 +986,12 @@
       updateStats(filtered);
       renderAgencias(filtered);
       renderSituacaoAgencia(filtered);
-      renderRemovidas(); // agora usa filtros internos
+      renderRemovidas();
     }
     
     document.getElementById('viewMode').addEventListener('change', applyFilters);
     
-    // === RENDERING PRINCIPAL ===
+    // Render Principal
     function renderTable(rows) {
       const tableHead = document.getElementById('tableHead');
       const tableBody = document.getElementById('tableBody');
@@ -1114,7 +1124,7 @@
       return { type: 'mantida', previousSituacao: prevSit, currentSituacao };
     }
     
-    // === ESTATÍSTICAS (dinâmicas pelos filtros) ===
+    // Stats (respeita multi prefixo)
     function updateStats(rows) {
       const total = rows.length;
       let valor = 0;
@@ -1130,29 +1140,29 @@
         if (evolution.type === 'nova') novas++;
       });
       
-      // Removidas também respeitando filtros
-      const agenciaFilter = document.getElementById('filterAgencia').value;
+      const agenciasSelecionadas = getSelectedAgencias();
       let removidasFiltradas = 0;
       removedProposals.forEach(({ row }) => {
         for (const [col, filterVal] of Object.entries(columnFilters)) {
           if (filterVal && String(row[col]).trim() !== filterVal) return;
         }
-        if (agenciaFilter) {
+        if (agenciasSelecionadas.length) {
           const dep = getColumnValue(row, 'Dependência');
-          if (dep !== agenciaFilter) return;
+          if (!agenciasSelecionadas.includes(dep)) return;
         }
         removidasFiltradas++;
       });
       
       document.getElementById('statTotal').textContent = total;
-      document.getElementById('statValor').textContent = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      document.getElementById('statValor').textContent =
+        valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
       document.getElementById('statNovas').textContent = novas;
       document.getElementById('statRemovidas').textContent = removidasFiltradas;
       
       addLog(`💰 Valor total filtrado: ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 'success');
     }
     
-    // === POR AGÊNCIA (dinâmico pelos filtros) ===
+    // Por Agência (dinâmico + multi)
     function renderAgencias(rows) {
       const body = document.getElementById('agenciaBody');
       body.innerHTML = '';
@@ -1167,7 +1177,6 @@
       });
       
       const entries = Object.entries(map).sort((a, b) => b[1].valor - a[1].valor);
-      
       if (!entries.length) {
         body.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:1rem; color:var(--text-secondary);">
           Sem dados para os filtros aplicados
@@ -1190,14 +1199,11 @@
       });
     }
     
-    // === SITUAÇÃO / AGÊNCIA (dinâmico pelos filtros) ===
     function renderSituacaoAgencia(rows) {
       const head = document.getElementById('situacaoAgenciaHead');
       const body = document.getElementById('situacaoAgenciaBody');
-      
       head.innerHTML = '';
       body.innerHTML = '';
-      
       if (!rows.length) return;
       
       const matrix = {};
@@ -1213,7 +1219,6 @@
       });
       
       const sitArray = Array.from(situacoes).sort();
-      
       let headHTML = '<tr><th>Agência</th>';
       sitArray.forEach(sit => headHTML += `<th style="text-align: center; font-size: 0.7rem;">${sit}</th>`);
       headHTML += '<th style="text-align: center;">Total</th></tr>';
@@ -1232,7 +1237,6 @@
       });
     }
     
-    // === REMOVIDAS (dinâmico pelos filtros) ===
     function renderRemovidas() {
       const body = document.getElementById('removidasBody');
       body.innerHTML = '';
@@ -1242,18 +1246,16 @@
         return;
       }
       
-      const agenciaFilter = document.getElementById('filterAgencia').value;
+      const agenciasSelecionadas = getSelectedAgencias();
       const filtradas = [];
       
       removedProposals.forEach(({ proposta, row }) => {
-        // aplica os mesmos filtros de coluna
         for (const [col, filterVal] of Object.entries(columnFilters)) {
           if (filterVal && String(row[col]).trim() !== filterVal) return;
         }
-        // aplica filtro de agência
-        if (agenciaFilter) {
+        if (agenciasSelecionadas.length) {
           const dep = getColumnValue(row, 'Dependência');
-          if (dep !== agenciaFilter) return;
+          if (!agenciasSelecionadas.includes(dep)) return;
         }
         filtradas.push({ proposta, row });
       });
@@ -1276,16 +1278,19 @@
       });
     }
     
-    // === EXPORT GERAL (respeitando filtros e colunas visíveis) ===
+    // Export geral
     document.getElementById('btnExportCSV').addEventListener('click', () => {
       if (!latestRows.length) return;
+      const agenciasSelecionadas = getSelectedAgencias();
       
-      const agenciaFilter = document.getElementById('filterAgencia').value;
       const filtered = latestRows.filter(row => {
         for (const [col, filterVal] of Object.entries(columnFilters)) {
           if (filterVal && String(row[col]).trim() !== filterVal) return false;
         }
-        if (agenciaFilter && getColumnValue(row, 'Dependência') !== agenciaFilter) return false;
+        if (agenciasSelecionadas.length) {
+          const dep = getColumnValue(row, 'Dependência');
+          if (!agenciasSelecionadas.includes(dep)) return false;
+        }
         return true;
       });
       
@@ -1335,7 +1340,7 @@
       });
     });
     
-    // === EXPORT POR AGÊNCIA (NOVO) ===
+    // Export Por Agência
     const btnExportAgenciaCSV = document.getElementById('btnExportAgenciaCSV');
     const btnExportAgenciaPNG = document.getElementById('btnExportAgenciaPNG');
     
