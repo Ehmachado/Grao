@@ -381,7 +381,7 @@
 
     <!-- Log -->
     <div id="logContainer" class="log-container hidden" style="margin-bottom: 1.5rem;">
-      <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 0.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
         <strong style="font-size: 0.875rem;">Log de Processamento</strong>
         <button id="clearLog" class="btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
           Limpar
@@ -593,10 +593,10 @@
         'Prefixo': ['prefixo', 'prefix'],
         'Proposta': ['proposta', 'proposal', 'numero', 'nº'],
         'Cliente': ['cliente', 'client', 'nome'],
-        'Situação': ['situação', 'situacao', 'status'],
-        'Dependência': ['dependência', 'dependencia', 'agência', 'agencia'],
-        'Valor': ['valor', 'value', 'total', 'montante'],
-        'Estado': ['estado', 'uf'],
+        'Situação': ['situação', 'situacao', 'status', 'popó'],
+        'Dependência': ['dependência', 'dependencia', 'agência', 'agencia', 'unidade'],
+        'Valor': ['valor', 'value', 'total', 'montante', 'vlr'],
+        'Estado': ['estado', 'uf', 'solicitação', 'solicitacao'],
         'SuperComercial': ['super', 'comercial', 'supervisor']
       };
       
@@ -616,6 +616,7 @@
                 if (!found[type]) {
                   found[type] = cell.v;
                   matchCount++;
+                  addLog(`  ✓ ${type}: "${cell.v}"`, 'success');
                 }
               }
             }
@@ -624,7 +625,7 @@
         
         if (matchCount >= 4) {
           columnMapping = found;
-          addLog(`✓ Cabeçalho detectado na linha ${row + 1}`, 'success');
+          addLog(`✓ ${matchCount} colunas mapeadas`, 'success');
           return row;
         }
       }
@@ -633,18 +634,70 @@
       return 1;
     }
     
-    function getColumn(row, type) {
-      if (columnMapping[type] && row[columnMapping[type]] !== undefined) {
-        return row[columnMapping[type]];
+    // Função melhorada para buscar valores de colunas
+    function getColumnValue(row, type) {
+      // Primeiro tenta pelo mapeamento
+      if (columnMapping[type]) {
+        const mappedName = columnMapping[type];
+        if (row[mappedName] !== undefined && row[mappedName] !== null && row[mappedName] !== "") {
+          return row[mappedName];
+        }
       }
+      
+      // Fallback: busca por nome da coluna diretamente
+      const typeVariations = {
+        'Valor': ['VALOR TOTAL', 'Valor Total', 'valor total', 'VALOR', 'Valor', 'valor'],
+        'Proposta': ['PROPOSTA', 'Proposta', 'proposta'],
+        'Cliente': ['Nome do Cliente', 'NOME DO CLIENTE', 'Cliente', 'CLIENTE'],
+        'Situação': ['Situação da Popó', 'Situação da Proposta', 'SITUAÇÃO', 'Situação'],
+        'Dependência': ['DEPENDÊNCIA', 'Dependência', 'dependência'],
+        'Estado': ['ESTADO DA SOLICITAÇÃO', 'Estado da Solicitação', 'ESTADO', 'Estado'],
+        'SuperComercial': ['SUPER COMERCIAL', 'Super Comercial', 'super comercial'],
+        'Prefixo': ['PREFIXO', 'Prefixo', 'prefixo']
+      };
+      
+      if (typeVariations[type]) {
+        for (const variation of typeVariations[type]) {
+          if (row[variation] !== undefined && row[variation] !== null && row[variation] !== "") {
+            return row[variation];
+          }
+        }
+      }
+      
+      // Busca flexível por qualquer coluna que contenha a palavra-chave
+      const keywords = {
+        'Valor': ['valor', 'total', 'montante'],
+        'Proposta': ['proposta'],
+        'Cliente': ['cliente', 'nome'],
+        'Situação': ['situação', 'situacao', 'status'],
+        'Dependência': ['dependencia', 'dependência', 'agencia', 'agência'],
+        'Estado': ['estado', 'uf'],
+        'SuperComercial': ['super', 'comercial']
+      };
+      
+      if (keywords[type]) {
+        for (const key of Object.keys(row)) {
+          const keyLower = key.toLowerCase();
+          if (keywords[type].some(kw => keyLower.includes(kw))) {
+            if (row[key] !== undefined && row[key] !== null && row[key] !== "") {
+              return row[key];
+            }
+          }
+        }
+      }
+      
       return "";
     }
     
     function parseNumber(val) {
-      if (!val) return 0;
+      if (!val && val !== 0) return 0;
       if (typeof val === "number") return val;
-      const clean = String(val).replace(/\./g, "").replace(",", ".");
+      
+      // Remove pontos de milhar e substitui vírgula decimal por ponto
+      const str = String(val).trim();
+      const clean = str.replace(/\./g, "").replace(",", ".");
       const n = parseFloat(clean);
+      
       return isNaN(n) ? 0 : n;
     }
     
@@ -671,7 +724,7 @@
           const rows = await readXlsx(file);
           if (rows && rows.length) {
             datasets.push({ name: file.name, rows });
-            addLog(`✓ ${rows.length} linhas`, 'success');
+            addLog(`✓ ${rows.length} linhas carregadas`, 'success');
           }
         } catch (err) {
           addLog(`✗ Erro: ${err.message}`, 'error');
@@ -686,6 +739,8 @@
       latestIndex = datasets.length - 1;
       latestRows = datasets[latestIndex].rows || [];
       
+      addLog(`📊 Base atual: ${latestRows.length} propostas`, 'info');
+      
       buildProposalHistory();
       computeRemovedProposals();
       detectAllColumns();
@@ -695,6 +750,14 @@
       applyFilters();
       
       addLog("✓ Processamento concluído!", 'success');
+      
+      // Log de debug para valores
+      if (latestRows.length > 0) {
+        const firstRow = latestRows[0];
+        const valorTest = getColumnValue(firstRow, 'Valor');
+        addLog(`🔍 Teste de valor (primeira linha): ${valorTest} → ${parseNumber(valorTest)}`, 'info');
+      }
+      
       lucide.createIcons();
     });
     
@@ -722,13 +785,14 @@
       proposalHistory = {};
       datasets.forEach((ds, dsIndex) => {
         (ds.rows || []).forEach((row) => {
-          const proposta = String(getColumn(row, 'Proposta')).trim();
+          const proposta = String(getColumnValue(row, 'Proposta')).trim();
           if (!proposta) return;
-          const situacao = String(getColumn(row, 'Situação')).trim();
+          const situacao = String(getColumnValue(row, 'Situação')).trim();
           if (!proposalHistory[proposta]) proposalHistory[proposta] = [];
           proposalHistory[proposta].push({ dsIndex, row, situacao });
         });
       });
+      addLog(`📚 ${Object.keys(proposalHistory).length} propostas únicas no histórico`, 'info');
     }
     
     function computeRemovedProposals() {
@@ -853,7 +917,7 @@
       const filterAgencia = document.getElementById('filterAgencia');
       const agencias = new Set();
       latestRows.forEach(row => {
-        const dep = getColumn(row, 'Dependência');
+        const dep = getColumnValue(row, 'Dependência');
         if (dep) agencias.add(dep);
       });
       
@@ -888,7 +952,7 @@
         
         // Filtro de agência
         if (agenciaFilter) {
-          const dep = getColumn(row, 'Dependência');
+          const dep = getColumnValue(row, 'Dependência');
           if (dep !== agenciaFilter) return false;
         }
         
@@ -932,10 +996,13 @@
           const td = document.createElement('td');
           const val = row[col];
           
-          if (col.toLowerCase().includes('valor')) {
+          // Detecta se é coluna de valor
+          if (col.toLowerCase().includes('valor') || col.toLowerCase().includes('total')) {
             td.style.textAlign = 'right';
             td.style.fontWeight = '700';
-            td.textContent = parseNumber(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            td.style.color = 'var(--primary)';
+            const numVal = parseNumber(val);
+            td.textContent = numVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
           } else {
             td.textContent = val || '-';
           }
@@ -945,8 +1012,8 @@
         
         // Evolução
         const tdEvol = document.createElement('td');
-        const proposta = String(getColumn(row, 'Proposta')).trim();
-        const sit = getColumn(row, 'Situação');
+        const proposta = String(getColumnValue(row, 'Proposta')).trim();
+        const sit = getColumnValue(row, 'Situação');
         const evolution = getEvolutionInfo(proposta, sit);
         
         if (evolution.type === 'nova') {
@@ -989,10 +1056,10 @@
       
       const consolidated = {};
       rows.forEach(row => {
-        const dep = getColumn(row, 'Dependência') || 'Sem identificação';
-        const valor = parseNumber(getColumn(row, 'Valor'));
-        const proposta = String(getColumn(row, 'Proposta')).trim();
-        const sit = getColumn(row, 'Situação');
+        const dep = getColumnValue(row, 'Dependência') || 'Sem identificação';
+        const valor = parseNumber(getColumnValue(row, 'Valor'));
+        const proposta = String(getColumnValue(row, 'Proposta')).trim();
+        const sit = getColumnValue(row, 'Situação');
         
         if (!consolidated[dep]) {
           consolidated[dep] = { qtd: 0, valor: 0, novas: 0, mantidas: 0, alteradas: 0 };
@@ -1014,7 +1081,7 @@
           tr.innerHTML = `
             <td style="font-weight: 600;">${dep}</td>
             <td style="text-align: center;"><span class="badge badge-info">${data.qtd}</span></td>
-            <td style="text-align: right; font-weight: 700;">${data.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td style="text-align: right; font-weight: 700; color: var(--primary);">${data.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
             <td style="text-align: center;"><span class="badge badge-success">${data.novas}</span></td>
             <td style="text-align: center;"><span class="badge badge-warning">${data.mantidas}</span></td>
             <td style="text-align: center;"><span class="badge badge-info">${data.alteradas}</span></td>
@@ -1042,12 +1109,16 @@
     
     function updateStats(rows) {
       const total = rows.length;
-      const valor = rows.reduce((acc, row) => acc + parseNumber(getColumn(row, 'Valor')), 0);
       
+      let valor = 0;
       let novas = 0;
+      
       rows.forEach(row => {
-        const proposta = String(getColumn(row, 'Proposta')).trim();
-        const sit = getColumn(row, 'Situação');
+        const valRow = getColumnValue(row, 'Valor');
+        valor += parseNumber(valRow);
+        
+        const proposta = String(getColumnValue(row, 'Proposta')).trim();
+        const sit = getColumnValue(row, 'Situação');
         const evolution = getEvolutionInfo(proposta, sit);
         if (evolution.type === 'nova') novas++;
       });
@@ -1056,6 +1127,8 @@
       document.getElementById('statValor').textContent = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
       document.getElementById('statNovas').textContent = novas;
       document.getElementById('statRemovidas').textContent = removedProposals.length;
+      
+      addLog(`💰 Valor total calculado: ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 'success');
     }
     
     function renderAgencias(rows) {
@@ -1064,8 +1137,8 @@
       
       const map = {};
       rows.forEach(row => {
-        const dep = getColumn(row, 'Dependência') || 'Sem identificação';
-        const val = parseNumber(getColumn(row, 'Valor'));
+        const dep = getColumnValue(row, 'Dependência') || 'Sem identificação';
+        const val = parseNumber(getColumnValue(row, 'Valor'));
         if (!map[dep]) map[dep] = { qtd: 0, valor: 0 };
         map[dep].qtd++;
         map[dep].valor += val;
@@ -1078,7 +1151,7 @@
           tr.innerHTML = `
             <td style="font-weight: 600;">${dep}</td>
             <td style="text-align: center;"><span class="badge badge-info">${data.qtd}</span></td>
-            <td style="text-align: right; font-weight: 700;">${data.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td style="text-align: right; font-weight: 700; color: var(--primary);">${data.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
           `;
           body.appendChild(tr);
         });
@@ -1097,8 +1170,8 @@
       const situacoes = new Set();
       
       rows.forEach(row => {
-        const dep = getColumn(row, 'Dependência') || 'Sem identificação';
-        const sit = String(getColumn(row, 'Situação')).trim() || 'Sem situação';
+        const dep = getColumnValue(row, 'Dependência') || 'Sem identificação';
+        const sit = String(getColumnValue(row, 'Situação')).trim() || 'Sem situação';
         situacoes.add(sit);
         if (!matrix[dep]) matrix[dep] = {};
         if (!matrix[dep][sit]) matrix[dep][sit] = 0;
@@ -1133,8 +1206,8 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td style="font-weight: 700; color: #dc2626;">${proposta}</td>
-          <td>${getColumn(row, 'Cliente') || '-'}</td>
-          <td style="text-align: right; font-weight: 700;">${parseNumber(getColumn(row, 'Valor')).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+          <td>${getColumnValue(row, 'Cliente') || '-'}</td>
+          <td style="text-align: right; font-weight: 700; color: var(--primary);">${parseNumber(getColumnValue(row, 'Valor')).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
         `;
         body.appendChild(tr);
       });
@@ -1153,7 +1226,7 @@
         for (const [col, filterVal] of Object.entries(columnFilters)) {
           if (filterVal && String(row[col]).trim() !== filterVal) return false;
         }
-        if (agenciaFilter && getColumn(row, 'Dependência') !== agenciaFilter) return false;
+        if (agenciaFilter && getColumnValue(row, 'Dependência') !== agenciaFilter) return false;
         return true;
       });
       
@@ -1162,8 +1235,8 @@
       const lines = [header.join(';')];
       
       filtered.forEach(row => {
-        const proposta = String(getColumn(row, 'Proposta')).trim();
-        const sit = getColumn(row, 'Situação');
+        const proposta = String(getColumnValue(row, 'Proposta')).trim();
+        const sit = getColumnValue(row, 'Situação');
         const evolution = getEvolutionInfo(proposta, sit);
         
         const values = visibleCols.map(col => {
