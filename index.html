@@ -390,7 +390,7 @@
       <div id="logContent"></div>
     </div>
 
-    <!-- Cards Resumo -->
+    <!-- Cards de Resumo -->
     <div class="grid grid-cols-4" style="margin-bottom: 1.5rem;">
       <div class="stat-card">
         <div class="stat-label">Total de Propostas</div>
@@ -414,7 +414,7 @@
       </div>
     </div>
 
-    <!-- Filtros + Colunas -->
+    <!-- Filtros e Seletor de Colunas -->
     <div class="grid" style="grid-template-columns: 2fr 1fr; margin-bottom: 1.5rem;">
       <!-- Filtros -->
       <div class="filter-section">
@@ -431,7 +431,7 @@
         <div id="filtersContainer" class="grid grid-cols-3"></div>
       </div>
 
-      <!-- Colunas Visíveis -->
+      <!-- Seletor de Colunas -->
       <div class="filter-section">
         <h2 class="section-title">
           <i data-lucide="columns" style="width: 1.25rem; height: 1.25rem;"></i>
@@ -441,7 +441,16 @@
       </div>
     </div>
 
-    <!-- Modo de Visualização / Filtro Agência / Export -->
+    <!-- NOVO: Seletor de Prefixos Carregados -->
+    <div class="filter-section" style="margin-bottom: 1.5rem;">
+      <h2 class="section-title">
+        <i data-lucide="list-checks" style="width: 1.25rem; height: 1.25rem;"></i>
+        Prefixos Carregados
+      </h2>
+      <div id="prefixSelector" class="column-selector scrollbar-thin"></div>
+    </div>
+
+    <!-- Controles de Visualização e Exportação -->
     <div class="card" style="padding: 1rem; margin-bottom: 1.5rem;">
       <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 200px;">
@@ -453,12 +462,11 @@
             <option value="consolidated">Consolidado por Agência</option>
           </select>
         </div>
-        <div style="flex: 1; min-width: 220px;">
+        <div style="flex: 1; min-width: 200px;">
           <label style="display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">
-            FILTRAR POR AGÊNCIA / PREFIXO (MÚLTIPLO)
+            FILTRAR POR AGÊNCIA
           </label>
-          <!-- ALTERADO: multiple -->
-          <select id="filterAgencia" class="input" multiple size="4">
+          <select id="filterAgencia" class="input">
             <option value="">Todas as Agências</option>
           </select>
         </div>
@@ -493,7 +501,7 @@
 
     <!-- Painéis Adicionais -->
     <div class="grid grid-cols-3">
-      <!-- Por Agência -->
+      <!-- Total por Agência -->
       <div id="agenciaCard" class="card" style="padding: 1.5rem;">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
           <h2 class="section-title" style="margin-bottom:0;">
@@ -523,7 +531,7 @@
         </div>
       </div>
 
-      <!-- Situação/Agência -->
+      <!-- Situação por Agência -->
       <div class="card" style="padding: 1.5rem;">
         <h2 class="section-title">
           <i data-lucide="pie-chart" style="width: 1.25rem; height: 1.25rem;"></i>
@@ -562,7 +570,7 @@
   <script>
     lucide.createIcons();
     
-    // LOG
+    // === LOG SYSTEM ===
     const logContainer = document.getElementById("logContainer");
     const logContent = document.getElementById("logContent");
     const clearLog = document.getElementById("clearLog");
@@ -582,7 +590,7 @@
       logContainer.classList.add('hidden');
     });
     
-    // ESTADO GLOBAL
+    // === GLOBAL STATE ===
     let datasets = [];
     let latestIndex = -1;
     let latestRows = [];
@@ -593,8 +601,9 @@
     let visibleColumns = new Set();
     let columnFilters = {};
     let currentFilteredRows = [];
+    let selectedPrefixes = new Set(); // NOVO: prefixos selecionados
     
-    // HEADER DETECTION
+    // === COLUMN DETECTION ===
     function detectHeaderRow(sheet) {
       addLog("🔍 Detectando cabeçalhos...", 'info');
       
@@ -706,6 +715,7 @@
       return isNaN(n) ? 0 : n;
     }
     
+    // === FILE PROCESSING ===
     const fileInput = document.getElementById("fileInput");
     
     fileInput.addEventListener("change", async (e) => {
@@ -722,6 +732,7 @@
       columnMapping = {};
       allColumns = [];
       currentFilteredRows = [];
+      selectedPrefixes = new Set();
       
       for (const file of files) {
         try {
@@ -752,6 +763,7 @@
       initializeVisibleColumns();
       buildColumnSelector();
       buildFilters();
+      buildPrefixSelector(); // NOVO: monta seletor de prefixos
       applyFilters();
       
       addLog("✓ Processamento concluído!", 'success');
@@ -828,7 +840,7 @@
       visibleColumns = new Set(allColumns);
     }
     
-    // Seletor de Colunas
+    // === COLUMN SELECTOR ===
     function buildColumnSelector() {
       const selector = document.getElementById("columnSelector");
       selector.innerHTML = '';
@@ -883,8 +895,93 @@
         selectAll.checked = visibleColumns.size === allColumns.length;
       }
     }
+
+    // === NOVO: PREFIX SELECTOR ===
+    function buildPrefixSelector() {
+      const container = document.getElementById('prefixSelector');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const prefixesSet = new Set();
+      latestRows.forEach(row => {
+        const prefix = String(getColumnValue(row, 'Prefixo') || '').trim();
+        if (prefix) prefixesSet.add(prefix);
+      });
+
+      const prefixes = Array.from(prefixesSet).sort((a, b) =>
+        a.localeCompare(b, 'pt-BR', { numeric: true })
+      );
+
+      if (!prefixes.length) {
+        container.innerHTML = `<div style="font-size:0.8rem; color:var(--text-secondary);">
+          Nenhum prefixo encontrado na base atual.
+        </div>`;
+        selectedPrefixes = new Set();
+        return;
+      }
+
+      // Por padrão, todos selecionados
+      selectedPrefixes = new Set(prefixes);
+
+      // Checkbox "Selecionar Todos"
+      const headerDiv = document.createElement('div');
+      headerDiv.className = 'checkbox-group';
+      headerDiv.style.borderBottom = '1px solid var(--border)';
+      headerDiv.style.marginBottom = '0.5rem';
+      headerDiv.style.fontWeight = '600';
+      headerDiv.innerHTML = `
+        <input type="checkbox" id="prefixSelectAll" class="checkbox" checked />
+        <label for="prefixSelectAll" style="cursor:pointer; flex:1;">Selecionar Todos</label>
+      `;
+      container.appendChild(headerDiv);
+
+      const selectAll = headerDiv.querySelector('#prefixSelectAll');
+      selectAll.addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        selectedPrefixes.clear();
+        const boxes = container.querySelectorAll('.prefix-checkbox');
+        boxes.forEach(cb => {
+          cb.checked = checked;
+          if (checked) selectedPrefixes.add(cb.dataset.prefix);
+        });
+        applyFilters();
+      });
+
+      // Checkboxes individuais
+      prefixes.forEach(prefix => {
+        const id = `prefix_${prefix.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        const div = document.createElement('div');
+        div.className = 'checkbox-group';
+        div.innerHTML = `
+          <input type="checkbox" id="${id}" 
+                 class="checkbox prefix-checkbox" 
+                 data-prefix="${prefix}" checked />
+          <label for="${id}" style="cursor:pointer; flex:1; font-size:0.875rem;">
+            ${prefix}
+          </label>
+        `;
+        container.appendChild(div);
+
+        const cb = div.querySelector('input');
+        cb.addEventListener('change', (e) => {
+          const p = e.target.dataset.prefix;
+          if (e.target.checked) {
+            selectedPrefixes.add(p);
+          } else {
+            selectedPrefixes.delete(p);
+          }
+
+          // Atualiza "Selecionar Todos"
+          const total = container.querySelectorAll('.prefix-checkbox').length;
+          const checkedCount = container.querySelectorAll('.prefix-checkbox:checked').length;
+          if (selectAll) selectAll.checked = (checkedCount === total);
+
+          applyFilters();
+        });
+      });
+    }
     
-    // Filtros
+    // === FILTERS ===
     function buildFilters() {
       const container = document.getElementById("filtersContainer");
       container.innerHTML = '';
@@ -918,7 +1015,7 @@
         });
       });
       
-      // Filtro especial por agência (multi)
+      // Filtro especial para agência
       const filterAgencia = document.getElementById('filterAgencia');
       const agencias = new Set();
       latestRows.forEach(row => {
@@ -940,37 +1037,45 @@
     document.getElementById('clearFilters').addEventListener('click', () => {
       columnFilters = {};
       document.querySelectorAll('.filter-select').forEach(sel => sel.value = '');
-      const filterAgencia = document.getElementById('filterAgencia');
-      Array.from(filterAgencia.options).forEach(opt => {
-        opt.selected = (opt.value === '');
-      });
+      document.getElementById('filterAgencia').value = '';
+
+      // Reset dos prefixos: marca todos novamente
+      const prefixContainer = document.getElementById('prefixSelector');
+      if (prefixContainer) {
+        selectedPrefixes = new Set();
+        const boxes = prefixContainer.querySelectorAll('.prefix-checkbox');
+        boxes.forEach(cb => {
+          cb.checked = true;
+          selectedPrefixes.add(cb.dataset.prefix);
+        });
+        const selectAll = prefixContainer.querySelector('#prefixSelectAll');
+        if (selectAll) selectAll.checked = true;
+      }
+
       applyFilters();
     });
-    
-    function getSelectedAgencias() {
-      const select = document.getElementById('filterAgencia');
-      if (!select) return [];
-      const values = Array.from(select.selectedOptions)
-        .map(o => o.value)
-        .filter(v => v);
-      return values;
-    }
     
     function applyFilters() {
       if (!latestRows.length) return;
       
-      const agenciasSelecionadas = getSelectedAgencias();
+      const agenciaFilter = document.getElementById('filterAgencia').value;
+      const hasPrefixFilter = selectedPrefixes && selectedPrefixes.size > 0;
       
       const filtered = latestRows.filter(row => {
+        // Filtros por coluna
         for (const [col, filterVal] of Object.entries(columnFilters)) {
           if (filterVal && String(row[col]).trim() !== filterVal) return false;
         }
-        
-        if (agenciasSelecionadas.length) {
+        // Filtro de agência
+        if (agenciaFilter) {
           const dep = getColumnValue(row, 'Dependência');
-          if (!agenciasSelecionadas.includes(dep)) return false;
+          if (dep !== agenciaFilter) return false;
         }
-        
+        // Filtro de prefixo (NOVO)
+        if (hasPrefixFilter) {
+          const prefix = String(getColumnValue(row, 'Prefixo') || '').trim();
+          if (!selectedPrefixes.has(prefix)) return false;
+        }
         return true;
       });
       
@@ -991,7 +1096,7 @@
     
     document.getElementById('viewMode').addEventListener('change', applyFilters);
     
-    // Render Principal
+    // === RENDERING PRINCIPAL ===
     function renderTable(rows) {
       const tableHead = document.getElementById('tableHead');
       const tableBody = document.getElementById('tableBody');
@@ -1124,7 +1229,7 @@
       return { type: 'mantida', previousSituacao: prevSit, currentSituacao };
     }
     
-    // Stats (respeita multi prefixo)
+    // === ESTATÍSTICAS ===
     function updateStats(rows) {
       const total = rows.length;
       let valor = 0;
@@ -1140,15 +1245,21 @@
         if (evolution.type === 'nova') novas++;
       });
       
-      const agenciasSelecionadas = getSelectedAgencias();
+      const agenciaFilter = document.getElementById('filterAgencia').value;
       let removidasFiltradas = 0;
+      const hasPrefixFilter = selectedPrefixes && selectedPrefixes.size > 0;
+      
       removedProposals.forEach(({ row }) => {
         for (const [col, filterVal] of Object.entries(columnFilters)) {
           if (filterVal && String(row[col]).trim() !== filterVal) return;
         }
-        if (agenciasSelecionadas.length) {
+        if (agenciaFilter) {
           const dep = getColumnValue(row, 'Dependência');
-          if (!agenciasSelecionadas.includes(dep)) return;
+          if (dep !== agenciaFilter) return;
+        }
+        if (hasPrefixFilter) {
+          const prefix = String(getColumnValue(row, 'Prefixo') || '').trim();
+          if (!selectedPrefixes.has(prefix)) return;
         }
         removidasFiltradas++;
       });
@@ -1162,7 +1273,7 @@
       addLog(`💰 Valor total filtrado: ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 'success');
     }
     
-    // Por Agência (dinâmico + multi)
+    // === POR AGÊNCIA ===
     function renderAgencias(rows) {
       const body = document.getElementById('agenciaBody');
       body.innerHTML = '';
@@ -1177,6 +1288,7 @@
       });
       
       const entries = Object.entries(map).sort((a, b) => b[1].valor - a[1].valor);
+      
       if (!entries.length) {
         body.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:1rem; color:var(--text-secondary);">
           Sem dados para os filtros aplicados
@@ -1199,11 +1311,14 @@
       });
     }
     
+    // === SITUAÇÃO / AGÊNCIA ===
     function renderSituacaoAgencia(rows) {
       const head = document.getElementById('situacaoAgenciaHead');
       const body = document.getElementById('situacaoAgenciaBody');
+      
       head.innerHTML = '';
       body.innerHTML = '';
+      
       if (!rows.length) return;
       
       const matrix = {};
@@ -1219,6 +1334,7 @@
       });
       
       const sitArray = Array.from(situacoes).sort();
+      
       let headHTML = '<tr><th>Agência</th>';
       sitArray.forEach(sit => headHTML += `<th style="text-align: center; font-size: 0.7rem;">${sit}</th>`);
       headHTML += '<th style="text-align: center;">Total</th></tr>';
@@ -1237,6 +1353,7 @@
       });
     }
     
+    // === REMOVIDAS ===
     function renderRemovidas() {
       const body = document.getElementById('removidasBody');
       body.innerHTML = '';
@@ -1246,16 +1363,21 @@
         return;
       }
       
-      const agenciasSelecionadas = getSelectedAgencias();
+      const agenciaFilter = document.getElementById('filterAgencia').value;
+      const hasPrefixFilter = selectedPrefixes && selectedPrefixes.size > 0;
       const filtradas = [];
       
       removedProposals.forEach(({ proposta, row }) => {
         for (const [col, filterVal] of Object.entries(columnFilters)) {
           if (filterVal && String(row[col]).trim() !== filterVal) return;
         }
-        if (agenciasSelecionadas.length) {
+        if (agenciaFilter) {
           const dep = getColumnValue(row, 'Dependência');
-          if (!agenciasSelecionadas.includes(dep)) return;
+          if (dep !== agenciaFilter) return;
+        }
+        if (hasPrefixFilter) {
+          const prefix = String(getColumnValue(row, 'Prefixo') || '').trim();
+          if (!selectedPrefixes.has(prefix)) return;
         }
         filtradas.push({ proposta, row });
       });
@@ -1278,18 +1400,21 @@
       });
     }
     
-    // Export geral
+    // === EXPORT GERAL ===
     document.getElementById('btnExportCSV').addEventListener('click', () => {
       if (!latestRows.length) return;
-      const agenciasSelecionadas = getSelectedAgencias();
+      
+      const agenciaFilter = document.getElementById('filterAgencia').value;
+      const hasPrefixFilter = selectedPrefixes && selectedPrefixes.size > 0;
       
       const filtered = latestRows.filter(row => {
         for (const [col, filterVal] of Object.entries(columnFilters)) {
           if (filterVal && String(row[col]).trim() !== filterVal) return false;
         }
-        if (agenciasSelecionadas.length) {
-          const dep = getColumnValue(row, 'Dependência');
-          if (!agenciasSelecionadas.includes(dep)) return false;
+        if (agenciaFilter && getColumnValue(row, 'Dependência') !== agenciaFilter) return false;
+        if (hasPrefixFilter) {
+          const prefix = String(getColumnValue(row, 'Prefixo') || '').trim();
+          if (!selectedPrefixes.has(prefix)) return false;
         }
         return true;
       });
@@ -1340,7 +1465,7 @@
       });
     });
     
-    // Export Por Agência
+    // === EXPORT POR AGÊNCIA ===
     const btnExportAgenciaCSV = document.getElementById('btnExportAgenciaCSV');
     const btnExportAgenciaPNG = document.getElementById('btnExportAgenciaPNG');
     
