@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Painel de Propostas - SUP BARREIRAS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- TailwindCSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS local -->
+  <script src="xlsx.full.min.js"></script>
+  <!-- html2canvas para exportar PNG -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
+    body {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 25%, #ffffff 50%, #f0fdf4 75%, #e0f2fe 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 20s ease infinite;
+      color: #1e293b;
+      font-family: 'Inter', system-ui, sans-serif;
+      position: relative;
+      overflow-x: hidden;
+    }
+    
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(circle at 20% 30%, rgba(34, 197, 94, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    #dashboard {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .glass {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border: 2px solid rgba(34, 197, 94, 0.2);
+      box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.08),
+        0 1px 4px rgba(34, 197, 94, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .glass:hover {
+      border-color: rgba(34, 197, 94, 0.4);
+      box-shadow: 
+        0 8px 30px rgba(0, 0, 0, 0.12),
+        0 2px 8px rgba(34, 197, 94, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .badge {
+      border-radius: 999px;
+      padding: 0.25rem 0.85rem;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: rgba(229, 231, 235, 0.5);
+      border-radius: 10px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      border-radius: 10px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    }
+    
+    .input-modern {
+      background: #ffffff;
+      border: 2px solid rgba(34, 197, 94, 0.2);
+      border-radius: 12px;
+      padding: 0.65rem 1rem;
+      color: #1e293b;
+      transition: all 0.3s ease;
+      font-size: 0.8rem;
+    }
+    
+    .input-modern:focus {
+      outline: none;
+      background: #ffffff;
+      border-color: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1);
+    }
+    
+    .input-modern:hover {
+      border-color: rgba(34, 197, 94, 0.4);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+      border: none;
+      cursor: pointer;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    }
+    
+    .btn-secondary {
+      background: #ffffff;
+      color: #15803d;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: all 0.3s ease;
+      border: 2px solid #22c55e;
+      cursor: pointer;
+    }
+    
+    .btn-secondary:hover {
+      background: #f0fdf4;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+      border-radius: 16px;
+      padding: 1.25rem;
+      border: 2px solid rgba(34, 197, 94, 0.2);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+    }
+    
+    .stat-card:hover {
+      border-color: rgba(34, 197, 94, 0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(34, 197, 94, 0.15);
+    }
+    
+    .table-modern {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    
+    .table-modern thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    }
+    
+    .table-modern thead th {
+      padding: 1rem 0.75rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      color: #15803d;
+      border-bottom: 3px solid #22c55e;
+    }
+    
+    .table-modern tbody tr {
+      transition: all 0.2s ease;
+      border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+    }
+    
+    .table-modern tbody tr:hover {
+      background: rgba(34, 197, 94, 0.05);
+      transform: scale(1.002);
+    }
+    
+    .table-modern tbody td {
+      padding: 0.85rem 0.75rem;
+      font-size: 0.75rem;
+    }
+    
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #15803d;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .header-gradient {
+      background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+      border: 3px solid #22c55e;
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 8px 32px rgba(34, 197, 94, 0.15);
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .icon-wrapper {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    }
+    
+    .title-green {
+      background: linear-gradient(135deg, #15803d 0%, #22c55e 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-7xl mx-auto py-8 px-4" id="dashboard">
+    <!-- Header -->
+    <header class="header-gradient mb-8 fade-in">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div class="flex items-start gap-4">
+          <div class="icon-wrapper">
+            <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-3xl md:text-4xl font-bold mb-2 title-green">
+              Painel de Propostas
+            </h1>
+            <p class="text-xs text-green-800 tracking-wide uppercase font-semibold mb-2">
+              SUP BARREIRAS • Sistema de Análise de Propostas
+            </p>
+            <p class="text-sm text-slate-600 max-w-2xl leading-relaxed">
+              Importe uma ou mais planilhas do GRAO. A última será considerada como base atual.
+              As anteriores servem para mapear evolução das propostas.
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-col items-end gap-3">
+          <label class="cursor-pointer group">
+            <input id="fileInput" type="file" multiple accept=".xlsx" class="hidden" />
+            <div class="btn-primary flex items-center gap-2">
+              <i data-lucide="upload" class="w-4 h-4"></i>
+              <span>Carregar Planilhas</span>
+            </div>
+          </label>
+          <div id="fileInfo" class="text-[0.65rem] text-slate-600 text-right font-medium"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Filtros + Resumo -->
+    <section class="grid grid-cols-1 lg:grid-cols-[2fr,1.3fr] gap-6 mb-6">
+      <!-- Filtros -->
+      <div class="glass rounded-2xl p-6 fade-in" style="animation-delay: 0.1s">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="section-title">
+            <i data-lucide="filter" class="w-5 h-5 text-green-600"></i>
+            Filtros Dinâmicos
+          </h2>
+          <div class="flex items-center gap-3">
+            <span class="badge bg-green-100 text-green-700 border-2 border-green-300">
+              <i data-lucide="database" class="w-3 h-3"></i>
+              Base: última planilha
+            </span>
+            <button id="clearFilters" class="text-xs text-slate-600 hover:text-green-700 transition-colors flex items-center gap-1 font-medium">
+              <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
+              Limpar
+            </button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-slate-700 mb-2 text-xs font-semibold uppercase tracking-wide flex items-center gap-1">
+              <i data-lucide="building-2" class="w-3.5 h-3.5 text-green-600"></i>
+              Dependência (F)
+            </label>
+            <select id="filterDependencia" class="w-full input-modern">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-2 text-xs font-semibold uppercase tracking-wide flex items-center gap-1">
+              <i data-lucide="file-check" class="w-3.5 h-3.5 text-green-600"></i>
+              Situação (E)
+            </label>
+            <select id="filterSituacao" class="w-full input-modern">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-2 text-xs font-semibold uppercase tracking-wide flex items-center gap-1">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-green-600"></i>
+              Estado (K)
+            </label>
+            <select id="filterEstado" class="w-full input-modern">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-2 text-xs font-semibold uppercase tracking-wide flex items-center gap-1">
+              <i data-lucide="user-check" class="w-3.5 h-3.5 text-green-600"></i>
+              Super Comercial (L)
+            </label>
+            <select id="filterSuper" class="w-full input-modern">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-2 text-xs font-semibold uppercase tracking-wide flex items-center gap-1">
+              <i data-lucide="hash" class="w-3.5 h-3.5 text-green-600"></i>
+              Proposta (C)
+            </label>
+            <input id="filterProposta" placeholder="Código exato ou parte" class="w-full input-modern" />
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-2 text-xs font-semibold uppercase tracking-wide flex items-center gap-1">
+              <i data-lucide="users" class="w-3.5 h-3.5 text-green-600"></i>
+              Cliente (D)
+            </label>
+            <input id="filterCliente" placeholder="Nome contém..." class="w-full input-modern" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Indicadores -->
+      <div class="glass rounded-2xl p-6 flex flex-col gap-4 fade-in" style="animation-delay: 0.2s">
+        <div class="flex items-center justify-between">
+          <h2 class="section-title">
+            <i data-lucide="bar-chart-3" class="w-5 h-5 text-green-600"></i>
+            Resumo
+          </h2>
+          <div id="latestLabel" class="text-[0.6rem] text-slate-600 text-right font-medium"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="stat-card">
+            <div class="flex items-center gap-2 mb-2">
+              <i data-lucide="list" class="w-4 h-4 text-green-600"></i>
+              <span class="text-[0.65rem] text-slate-600 uppercase font-semibold tracking-wide">Propostas</span>
+            </div>
+            <span id="cardQtd" class="text-2xl font-bold text-green-700 block">-</span>
+            <span class="text-[0.6rem] text-slate-500 mt-1 block">Filtradas</span>
+          </div>
+          <div class="stat-card">
+            <div class="flex items-center gap-2 mb-2">
+              <i data-lucide="dollar-sign" class="w-4 h-4 text-green-600"></i>
+              <span class="text-[0.65rem] text-slate-600 uppercase font-semibold tracking-wide">Valor</span>
+            </div>
+            <span id="cardValor" class="text-2xl font-bold text-green-700 block">-</span>
+            <span class="text-[0.6rem] text-slate-500 mt-1 block">Total</span>
+          </div>
+          <div class="stat-card">
+            <div class="flex items-center gap-2 mb-2">
+              <i data-lucide="trash-2" class="w-4 h-4 text-red-600"></i>
+              <span class="text-[0.65rem] text-slate-600 uppercase font-semibold tracking-wide">Removidas</span>
+            </div>
+            <span id="cardRemovidas" class="text-2xl font-bold text-red-600 block">-</span>
+            <span class="text-[0.6rem] text-slate-500 mt-1 block">Propostas</span>
+          </div>
+        </div>
+        <p class="text-[0.65rem] text-slate-600 leading-relaxed bg-green-50 rounded-lg p-3 border-2 border-green-200">
+          <i data-lucide="info" class="w-3 h-3 inline mr-1 text-green-600"></i>
+          Removidas = estavam em alguma planilha anterior, mas não constam na mais recente.
+        </p>
+        <div class="flex gap-3 mt-2">
+          <button id="btnExportCSV" class="flex-1 btn-primary flex items-center justify-center gap-2 text-xs">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Exportar CSV</span>
+          </button>
+          <button id="btnExportPNG" class="flex-1 btn-secondary flex items-center justify-center gap-2 text-xs">
+            <i data-lucide="image" class="w-4 h-4"></i>
+            <span>Exportar PNG</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabela principal + Painéis laterais -->
+    <section class="grid grid-cols-1 xl:grid-cols-[3fr,1.4fr] gap-6 mb-6">
+      <!-- Tabela principal -->
+      <div class="glass rounded-2xl p-6 overflow-hidden fade-in" style="animation-delay: 0.3s">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="section-title">
+            <i data-lucide="table" class="w-5 h-5 text-green-600"></i>
+            Propostas - Base Atual
+          </h2>
+          <span class="text-[0.65rem] text-slate-600 bg-green-50 px-3 py-1.5 rounded-full font-medium border border-green-200">
+            Colunas principais
+          </span>
+        </div>
+        <div class="overflow-auto max-h-[500px] scrollbar-thin rounded-xl border-2 border-green-200">
+          <table class="min-w-full table-modern">
+            <thead>
+              <tr>
+                <th class="px-3 py-3 text-left">Prefixo</th>
+                <th class="px-3 py-3 text-left">Proposta</th>
+                <th class="px-3 py-3 text-left">Cliente</th>
+                <th class="px-3 py-3 text-left">Situação</th>
+                <th class="px-3 py-3 text-left">Dependência</th>
+                <th class="px-3 py-3 text-right">Valor Total</th>
+                <th class="px-3 py-3 text-left">Estado</th>
+                <th class="px-3 py-3 text-left">Super</th>
+                <th class="px-3 py-3 text-left">Evolução</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Painéis laterais -->
+      <div class="flex flex-col gap-6">
+        <!-- Totais por Agência -->
+        <div class="glass rounded-2xl p-5 fade-in" style="animation-delay: 0.4s">
+          <h2 class="section-title mb-4">
+            <i data-lucide="pie-chart" class="w-5 h-5 text-green-600"></i>
+            Total por Agência
+          </h2>
+          <div class="overflow-auto max-h-56 scrollbar-thin rounded-xl border-2 border-green-200">
+            <table class="w-full table-modern">
+              <thead>
+                <tr>
+                  <th class="py-2 px-3 text-left">Dependência</th>
+                  <th class="py-2 px-3 text-center">Qtd</th>
+                  <th class="py-2 px-3 text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody id="agenciaBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- NOVA SEÇÃO: Situação por Agência -->
+        <div class="glass rounded-2xl p-5 fade-in" style="animation-delay: 0.45s">
+          <h2 class="section-title mb-3">
+            <i data-lucide="layout-grid" class="w-5 h-5 text-green-600"></i>
+            Situação por Agência
+          </h2>
+          <p class="text-[0.65rem] text-slate-600 mb-3 leading-relaxed">
+            Distribuição das situações das propostas em cada dependência (agência).
+          </p>
+          <div class="overflow-auto max-h-64 scrollbar-thin rounded-xl border-2 border-green-200">
+            <table class="w-full table-modern">
+              <thead id="situacaoPorAgenciaHead">
+              </thead>
+              <tbody id="situacaoPorAgenciaBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Evolução por Situação -->
+        <div class="glass rounded-2xl p-5 fade-in" style="animation-delay: 0.5s">
+          <h2 class="section-title mb-2">
+            <i data-lucide="activity" class="w-5 h-5 text-green-600"></i>
+            Evolução por Situação (Todas as Planilhas)
+          </h2>
+          <p class="text-[0.65rem] text-slate-600 mb-3 leading-relaxed">
+            Contagem de propostas por situação em cada versão de planilha carregada, respeitando os filtros aplicados.
+          </p>
+          <div class="overflow-auto max-h-48 scrollbar-thin rounded-xl border-2 border-green-200">
+            <table class="w-full table-modern">
+              <thead id="situacaoEvolHead">
+              </thead>
+              <tbody id="situacaoEvolBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Removidas -->
+        <div class="glass rounded-2xl p-5 fade-in" style="animation-delay: 0.6s">
+          <h2 class="section-title mb-2">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-600"></i>
+            <span class="text-red-700">Propostas Removidas</span>
+          </h2>
+          <p class="text-[0.65rem] text-slate-600 mb-3 leading-relaxed">
+            Propostas que existiam em planilhas anteriores e não aparecem na base mais recente.
+          </p>
+          <div class="overflow-auto max-h-44 scrollbar-thin rounded-xl border-2 border-red-200">
+            <table class="w-full table-modern">
+              <thead>
+                <tr>
+                  <th class="py-2 px-3 text-left">Proposta</th>
+                  <th class="py-2 px-3 text-left">Cliente</th>
+                  <th class="py-2 px-3 text-left">Dependência</th>
+                  <th class="py-2 px-3 text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody id="removidasBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Inicializar ícones Lucide
+    lucide.createIcons();
+    
+    function get(row, keys) {
+      for (const k of keys) {
+        if (row[k] !== undefined && row[k] !== null && row[k] !== "") {
+          return row[k];
+        }
+      }
+      return "";
+    }
+
+    function parseNumber(val) {
+      if (val === null || val === undefined) return 0;
+      if (typeof val === "number") return val;
+      const clean = String(val).replace(/\./g, "").replace(",", ".");
+      const n = parseFloat(clean);
+      return isNaN(n) ? 0 : n;
+    }
+
+    let datasets = [];
+    let latestIndex = -1;
+    let latestRows = [];
+    let proposalHistory = {};
+    let removedProposals = [];
+
+    const fileInput = document.getElementById("fileInput");
+    const fileInfo = document.getElementById("fileInfo");
+    const latestLabel = document.getElementById("latestLabel");
+
+    const filterDependencia = document.getElementById("filterDependencia");
+    const filterSituacao = document.getElementById("filterSituacao");
+    const filterEstado = document.getElementById("filterEstado");
+    const filterSuper = document.getElementById("filterSuper");
+    const filterProposta = document.getElementById("filterProposta");
+    const filterCliente = document.getElementById("filterCliente");
+    const clearFilters = document.getElementById("clearFilters");
+
+    const tableBody = document.getElementById("tableBody");
+    const agenciaBody = document.getElementById("agenciaBody");
+    const removidasBody = document.getElementById("removidasBody");
+
+    const cardQtd = document.getElementById("cardQtd");
+    const cardValor = document.getElementById("cardValor");
+    const cardRemovidas = document.getElementById("cardRemovidas");
+
+    const btnExportCSV = document.getElementById("btnExportCSV");
+    const btnExportPNG = document.getElementById("btnExportPNG");
+
+    const situacaoEvolHead = document.getElementById("situacaoEvolHead");
+    const situacaoEvolBody = document.getElementById("situacaoEvolBody");
+    
+    const situacaoPorAgenciaHead = document.getElementById("situacaoPorAgenciaHead");
+    const situacaoPorAgenciaBody = document.getElementById("situacaoPorAgenciaBody");
+
+    fileInput.addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) {
+        resetUI();
+        return;
+      }
+
+      datasets = [];
+      proposalHistory = {};
+      removedProposals = [];
+      latestIndex = -1;
+      latestRows = [];
+
+      for (const file of files) {
+        try {
+          const rows = await readXlsx(file);
+          if (rows && rows.length) {
+            datasets.push({ name: file.name, rows });
+          }
+        } catch (err) {
+          console.error("Falha ao processar arquivo:", file.name, err);
+        }
+      }
+
+      if (!datasets.length) {
+        alert("Nenhuma planilha válida foi carregada. Verifique se o arquivo é .xlsx e se o xlsx.full.min.js está acessível.");
+        resetUI();
+        return;
+      }
+
+      latestIndex = datasets.length - 1;
+      latestRows = datasets[latestIndex].rows || [];
+
+      buildProposalHistory();
+      computeRemovedProposals();
+      updateFileInfo();
+      populateFilterOptions();
+      applyFilters();
+      
+      // Reinicializar ícones após mudanças no DOM
+      lucide.createIcons();
+    });
+
+    function readXlsx(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            if (typeof XLSX === "undefined") {
+              throw new Error("Objeto XLSX não encontrado. Confirme se o arquivo xlsx.full.min.js está na mesma pasta do index.html.");
+            }
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+            resolve(rows);
+          } catch (err) {
+            console.error("Erro ao ler planilha:", err);
+            reject(err);
+          }
+        };
+        reader.onerror = (err) => {
+          reject(err);
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    function buildProposalHistory() {
+      proposalHistory = {};
+      datasets.forEach((ds, dsIndex) => {
+        (ds.rows || []).forEach((row) => {
+          const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim();
+          if (!proposta) return;
+          if (!proposalHistory[proposta]) proposalHistory[proposta] = [];
+          proposalHistory[proposta].push({ dsIndex, row });
+        });
+      });
+    }
+
+    function computeRemovedProposals() {
+      removedProposals = [];
+      if (latestIndex < 0) return;
+
+      Object.entries(proposalHistory).forEach(([proposta, history]) => {
+        const existedBefore = history.some((h) => h.dsIndex < latestIndex);
+        const existsNow = history.some((h) => h.dsIndex === latestIndex);
+
+        if (existedBefore && !existsNow) {
+          const lastPrev = history
+            .filter((h) => h.dsIndex < latestIndex)
+            .sort((a, b) => b.dsIndex - a.dsIndex)[0];
+
+          removedProposals.push({
+            proposta,
+            row: lastPrev.row,
+          });
+        }
+      });
+    }
+
+    function populateFilterOptions() {
+      const deps = new Set();
+      const sits = new Set();
+      const estados = new Set();
+      const supers = new Set();
+
+      (latestRows || []).forEach((row) => {
+        deps.add(get(row, ["DEPENDÊNCIA", "Dependência", "F"]));
+        sits.add(get(row, ["Situação da Popó", "Situação da Proposta", "E"]));
+        estados.add(get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"]));
+        supers.add(get(row, ["SUPER COMERCIAL", "Super Comercial", "L"]));
+      });
+
+      function fillSelect(select, values, allLabel) {
+        const current = select.value;
+        select.innerHTML = `<option value="">${allLabel}</option>`;
+        values
+          .filter((v) => v && String(v).trim() !== "")
+          .sort()
+          .forEach((v) => {
+            const opt = document.createElement("option");
+            opt.value = v;
+            opt.textContent = v;
+            select.appendChild(opt);
+          });
+        if (Array.from(select.options).some(o => o.value === current)) {
+          select.value = current;
+        }
+      }
+
+      fillSelect(filterDependencia, Array.from(deps), "Todas");
+      fillSelect(filterSituacao, Array.from(sits), "Todas");
+
+      filterEstado.innerHTML = '<option value="">Todos</option>';
+      Array.from(estados)
+        .filter((v) => v && String(v).trim() !== "")
+        .sort()
+        .forEach((v) => {
+          const opt = document.createElement("option");
+          opt.value = v;
+          opt.textContent = v;
+          filterEstado.appendChild(opt);
+        });
+
+      filterSuper.innerHTML = '<option value="">Todos</option>';
+      Array.from(supers)
+        .filter((v) => v && String(v).trim() !== "")
+        .sort()
+        .forEach((v) => {
+          const opt = document.createElement("option");
+          opt.value = v;
+          opt.textContent = v;
+          filterSuper.appendChild(opt);
+        });
+    }
+
+    [
+      filterDependencia,
+      filterSituacao,
+      filterEstado,
+      filterSuper,
+      filterProposta,
+      filterCliente
+    ].forEach((el) => {
+      el.addEventListener("input", applyFilters);
+      el.addEventListener("change", applyFilters);
+    });
+
+    clearFilters.addEventListener("click", () => {
+      filterDependencia.value = "";
+      filterSituacao.value = "";
+      filterEstado.value = "";
+      filterSuper.value = "";
+      filterProposta.value = "";
+      filterCliente.value = "";
+      applyFilters();
+    });
+
+    function applyFilters() {
+      if (latestIndex < 0 || !latestRows || !latestRows.length) {
+        resetUI();
+        return;
+      }
+
+      const depSel = filterDependencia.value.trim();
+      const sitSel = filterSituacao.value.trim();
+      const estSel = filterEstado.value.trim();
+      const superSel = filterSuper.value.trim();
+      const propostaBusca = filterProposta.value.trim().toLowerCase();
+      const clienteBusca = filterCliente.value.trim().toLowerCase();
+
+      const filtered = latestRows.filter((row) => {
+        const dep = String(get(row, ["DEPENDÊNCIA", "Dependência", "F"])).trim();
+        const sit = String(get(row, ["Situação da Popó", "Situação da Proposta", "E"])).trim();
+        const est = String(get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"])).trim();
+        const sup = String(get(row, ["SUPER COMERCIAL", "Super Comercial", "L"])).trim();
+        const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim().toLowerCase();
+        const cliente = String(get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"])).trim().toLowerCase();
+
+        if (depSel && dep !== depSel) return false;
+        if (sitSel && sit !== sitSel) return false;
+        if (estSel && est !== estSel) return false;
+        if (superSel && sup !== superSel) return false;
+        if (propostaBusca && !proposta.includes(propostaBusca)) return false;
+        if (clienteBusca && !cliente.includes(clienteBusca)) return false;
+
+        return true;
+      });
+
+      renderTable(filtered);
+      renderAgencias(filtered);
+      renderSituacaoPorAgencia(filtered);
+      renderRemovidas(depSel, sitSel, estSel, superSel);
+      renderSituacaoEvolucao(depSel, sitSel, estSel, superSel, propostaBusca, clienteBusca);
+
+      cardQtd.textContent = filtered.length.toString();
+      const soma = filtered.reduce((acc, row) => {
+        const v = get(row, ["VALOR TOTAL", "Valor Total", "I"]);
+        return acc + parseNumber(v);
+      }, 0);
+      cardValor.textContent = soma.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+      });
+      cardRemovidas.textContent = removedProposals.length.toString();
+    }
+
+    function renderTable(rows) {
+      tableBody.innerHTML = "";
+      rows.forEach((row) => {
+        const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim();
+        const cliente = get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"]);
+        const prefixo = get(row, ["Prefixo", "PREFIXO", "A", "M"]);
+        const dep = get(row, ["DEPENDÊNCIA", "Dependência", "F"]);
+        const sit = get(row, ["Situação da Popó", "Situação da Proposta", "E"]);
+        const est = get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"]);
+        const sup = get(row, ["SUPER COMERCIAL", "Super Comercial", "L"]);
+        const valor = get(row, ["VALOR TOTAL", "Valor Total", "I"]);
+
+        let evolucao = "Nova";
+        let evolClass = "bg-green-100 text-green-700 border-2 border-green-300";
+        const hist = proposalHistory[proposta];
+        if (hist && hist.some(h => h.dsIndex < latestIndex)) {
+          evolucao = "Mantida";
+          evolClass = "bg-amber-100 text-amber-700 border-2 border-amber-300";
+        }
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-mono text-slate-600">${prefixo || "-"}</td>
+          <td class="px-3 py-2 font-bold text-green-700">${proposta || "-"}</td>
+          <td class="px-3 py-2 text-slate-700">${cliente || "-"}</td>
+          <td class="px-3 py-2 text-slate-600">${sit || "-"}</td>
+          <td class="px-3 py-2 text-slate-700">${dep || "-"}</td>
+          <td class="px-3 py-2 text-right font-semibold text-green-700">
+            ${parseNumber(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+          </td>
+          <td class="px-3 py-2 text-slate-600">${est || "-"}</td>
+          <td class="px-3 py-2 text-slate-600">${sup || "-"}</td>
+          <td class="px-3 py-2">
+            <span class="badge ${evolClass}">
+              ${evolucao}
+            </span>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    function renderAgencias(rows) {
+      agenciaBody.innerHTML = "";
+      const mapa = {};
+      rows.forEach((row) => {
+        const dep = get(row, ["DEPENDÊNCIA", "Dependência", "F"]) || "Sem identificação";
+        const val = parseNumber(get(row, ["VALOR TOTAL", "Valor Total", "I"]));
+        if (!mapa[dep]) mapa[dep] = { qtd: 0, soma: 0 };
+        mapa[dep].qtd += 1;
+        mapa[dep].soma += val;
+      });
+
+      Object.entries(mapa)
+        .sort((a, b) => b[1].soma - a[1].soma)
+        .forEach(([dep, info]) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="py-2 px-3 text-slate-700 font-medium">${dep}</td>
+            <td class="py-2 px-3 text-center">
+              <span class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-xs border-2 border-green-300">
+                ${info.qtd}
+              </span>
+            </td>
+            <td class="py-2 px-3 text-right font-semibold text-green-700">
+              ${info.soma.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+            </td>
+          `;
+          agenciaBody.appendChild(tr);
+        });
+
+      if (!Object.keys(mapa).length) {
+        agenciaBody.innerHTML = `
+          <tr><td colspan="3" class="py-4 px-3 text-center text-slate-500 text-xs">
+            Sem dados para os filtros atuais.
+          </td></tr>`;
+      }
+    }
+
+    // NOVA FUNÇÃO: Renderizar Situação por Agência
+    function renderSituacaoPorAgencia(rows) {
+      situacaoPorAgenciaHead.innerHTML = "";
+      situacaoPorAgenciaBody.innerHTML = "";
+
+      if (!rows.length) {
+        situacaoPorAgenciaBody.innerHTML = `
+          <tr><td colspan="100%" class="py-4 px-3 text-center text-slate-500 text-xs">
+            Sem dados para exibir.
+          </td></tr>`;
+        return;
+      }
+
+      // Criar matriz: agência x situação
+      const matrix = {};
+      const situacoes = new Set();
+      
+      rows.forEach((row) => {
+        const dep = get(row, ["DEPENDÊNCIA", "Dependência", "F"]) || "Sem identificação";
+        const sit = String(get(row, ["Situação da Popó", "Situação da Proposta", "E"])).trim() || "Sem situação";
+        
+        situacoes.add(sit);
+        
+        if (!matrix[dep]) matrix[dep] = {};
+        if (!matrix[dep][sit]) matrix[dep][sit] = 0;
+        matrix[dep][sit] += 1;
+      });
+
+      const situacoesArray = Array.from(situacoes).sort((a, b) => 
+        a.localeCompare(b, "pt-BR", { sensitivity: "base" })
+      );
+
+      // Cabeçalho
+      let headHtml = "<tr><th class='py-2 px-3 text-left'>Agência</th>";
+      situacoesArray.forEach(sit => {
+        headHtml += `<th class="py-2 px-3 text-center text-[0.65rem]">${sit}</th>`;
+      });
+      headHtml += "<th class='py-2 px-3 text-center font-bold'>Total</th></tr>";
+      situacaoPorAgenciaHead.innerHTML = headHtml;
+
+      // Corpo
+      Object.entries(matrix)
+        .sort(([a], [b]) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }))
+        .forEach(([dep, sits]) => {
+          let total = 0;
+          let rowHtml = `<tr><td class="py-2 px-3 font-medium text-slate-700">${dep}</td>`;
+          
+          situacoesArray.forEach(sit => {
+            const count = sits[sit] || 0;
+            total += count;
+            const cellClass = count > 0 ? "bg-green-50 text-green-700 font-semibold" : "text-slate-400";
+            rowHtml += `<td class="py-2 px-3 text-center ${cellClass}">${count || "-"}</td>`;
+          });
+          
+          rowHtml += `<td class="py-2 px-3 text-center font-bold text-green-700 bg-green-50">${total}</td></tr>`;
+          situacaoPorAgenciaBody.insertAdjacentHTML("beforeend", rowHtml);
+        });
+    }
+
+    function renderRemovidas(depSel, sitSel, estSel, superSel) {
+      removidasBody.innerHTML = "";
+
+      const filtradas = removedProposals.filter(({ row }) => {
+        const dep = String(get(row, ["DEPENDÊNCIA", "Dependência", "F"])).trim();
+        const sit = String(get(row, ["Situação da Popó", "Situação da Proposta", "E"])).trim();
+        const est = String(get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"])).trim();
+        const sup = String(get(row, ["SUPER COMERCIAL", "Super Comercial", "L"])).trim();
+
+        if (depSel && dep !== depSel) return false;
+        if (sitSel && sit !== sitSel) return false;
+        if (estSel && est !== estSel) return false;
+        if (superSel && sup !== superSel) return false;
+        return true;
+      });
+
+      filtradas.slice(0, 150).forEach(({ proposta, row }) => {
+        const cliente = get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"]);
+        const dep = get(row, ["DEPENDÊNCIA", "Dependência", "F"]);
+        const val = get(row, ["VALOR TOTAL", "Valor Total", "I"]);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="py-2 px-3 text-red-600 font-bold">${proposta}</td>
+          <td class="py-2 px-3 text-slate-700">${cliente || "-"}</td>
+          <td class="py-2 px-3 text-slate-600">${dep || "-"}</td>
+          <td class="py-2 px-3 text-right font-semibold text-slate-700">
+            ${parseNumber(val).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+          </td>
+        `;
+        removidasBody.appendChild(tr);
+      });
+
+      if (!filtradas.length) {
+        removidasBody.innerHTML = `
+          <tr><td colspan="4" class="py-4 px-3 text-center text-slate-500 text-xs">
+            Nenhuma proposta removida dentro dos filtros atuais.
+          </td></tr>`;
+      }
+    }
+
+    function renderSituacaoEvolucao(depSel, sitSel, estSel, superSel, propostaBusca, clienteBusca) {
+      situacaoEvolHead.innerHTML = "";
+      situacaoEvolBody.innerHTML = "";
+
+      if (!datasets.length) return;
+
+      const situacaoMap = {};
+
+      // Para CADA planilha carregada, contar as situações respeitando os filtros
+      datasets.forEach((ds, idx) => {
+        (ds.rows || []).forEach((row) => {
+          const dep = String(get(row, ["DEPENDÊNCIA", "Dependência", "F"])).trim();
+          const sit = String(get(row, ["Situação da Popó", "Situação da Proposta", "E"])).trim() || "Sem situação";
+          const est = String(get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"])).trim();
+          const sup = String(get(row, ["SUPER COMERCIAL", "Super Comercial", "L"])).trim();
+          const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim().toLowerCase();
+          const cliente = String(get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"])).trim().toLowerCase();
+
+          // Aplicar os mesmos filtros
+          if (depSel && dep !== depSel) return;
+          if (sitSel && sit !== sitSel) return;
+          if (estSel && est !== estSel) return;
+          if (superSel && sup !== superSel) return;
+          if (propostaBusca && !proposta.includes(propostaBusca)) return;
+          if (clienteBusca && !cliente.includes(clienteBusca)) return;
+
+          if (!situacaoMap[sit]) {
+            situacaoMap[sit] = Array(datasets.length).fill(0);
+          }
+          situacaoMap[sit][idx] += 1;
+        });
+      });
+
+      const situacoes = Object.keys(situacaoMap).sort((a, b) =>
+        a.localeCompare(b, "pt-BR", { sensitivity: "base" })
+      );
+
+      // Cabeçalho com nome de cada planilha
+      let headHtml = "<tr><th class='py-2 px-3 text-left'>Situação</th>";
+      datasets.forEach((ds, idx) => {
+        const label = ds.name.replace(/\.xlsx$/i, "").substring(0, 20);
+        const isLatest = idx === latestIndex;
+        headHtml += `<th class="py-2 px-3 text-right text-[0.65rem] ${isLatest ? 'text-green-700 font-bold' : ''}">${isLatest ? '★ ' : ''}${label}</th>`;
+      });
+      headHtml += "</tr>";
+      situacaoEvolHead.innerHTML = headHtml;
+
+      if (!situacoes.length) {
+        situacaoEvolBody.innerHTML = `
+          <tr>
+            <td colspan="${datasets.length + 1}" class="py-4 px-3 text-center text-slate-500 text-xs">
+              Sem dados para exibir a evolução com os filtros atuais.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      // Corpo da tabela
+      situacoes.forEach((sit) => {
+        const counts = situacaoMap[sit];
+        let rowHtml = `<tr><td class="py-2 px-3 font-medium text-slate-700">${sit}</td>`;
+        counts.forEach((count, idx) => {
+          const isLatest = idx === latestIndex;
+          const cls = isLatest ? "text-green-700 font-bold bg-green-50" : "text-slate-600";
+          rowHtml += `<td class="py-2 px-3 text-right ${cls}">${count}</td>`;
+        });
+        rowHtml += "</tr>";
+        situacaoEvolBody.insertAdjacentHTML("beforeend", rowHtml);
+      });
+    }
+
+    function updateFileInfo() {
+      if (!datasets.length || latestIndex < 0) {
+        fileInfo.textContent = "";
+        latestLabel.textContent = "";
+        return;
+      }
+      const names = datasets.map((d, i) =>
+        `${i === latestIndex ? "★ " : ""}${d.name}`
+      );
+      fileInfo.innerHTML = `<span class="flex items-center gap-1"><i data-lucide="folder" class="w-3 h-3"></i> ${names.join(" • ")}</span>`;
+      latestLabel.textContent = "Base: " + datasets[latestIndex].name;
+      lucide.createIcons();
+    }
+
+    function resetUI() {
+      latestIndex = -1;
+      latestRows = [];
+      tableBody.innerHTML = "";
+      agenciaBody.innerHTML = "";
+      situacaoPorAgenciaHead.innerHTML = "";
+      situacaoPorAgenciaBody.innerHTML = "";
+      removidasBody.innerHTML = "";
+      situacaoEvolHead.innerHTML = "";
+      situacaoEvolBody.innerHTML = "";
+      fileInfo.textContent = "";
+      latestLabel.textContent = "";
+      cardQtd.textContent = "-";
+      cardValor.textContent = "-";
+      cardRemovidas.textContent = "-";
+    }
+
+    btnExportCSV.addEventListener("click", () => {
+      if (latestIndex < 0 || !latestRows || !latestRows.length) return;
+
+      const depSel = filterDependencia.value.trim();
+      const sitSel = filterSituacao.value.trim();
+      const estSel = filterEstado.value.trim();
+      const superSel = filterSuper.value.trim();
+      const propostaBusca = filterProposta.value.trim().toLowerCase();
+      const clienteBusca = filterCliente.value.trim().toLowerCase();
+
+      const filtered = latestRows.filter((row) => {
+        const dep = String(get(row, ["DEPENDÊNCIA", "Dependência", "F"])).trim();
+        const sit = String(get(row, ["Situação da Popó", "Situação da Proposta", "E"])).trim();
+        const est = String(get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"])).trim();
+        const sup = String(get(row, ["SUPER COMERCIAL", "Super Comercial", "L"])).trim();
+        const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim().toLowerCase();
+        const cliente = String(get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"])).trim().toLowerCase();
+
+        if (depSel && dep !== depSel) return false;
+        if (sitSel && sit !== sitSel) return false;
+        if (estSel && est !== estSel) return false;
+        if (superSel && sup !== superSel) return false;
+        if (propostaBusca && !proposta.includes(propostaBusca)) return false;
+        if (clienteBusca && !cliente.includes(clienteBusca)) return false;
+        return true;
+      });
+
+      const header = [
+        "Prefixo",
+        "Proposta",
+        "Nome do Cliente",
+        "Situação da Proposta",
+        "Dependência",
+        "Valor Total",
+        "Estado da Solicitação",
+        "Super Comercial",
+        "Evolução"
+      ];
+      const lines = [header.join(";")];
+
+      filtered.forEach((row) => {
+        const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim();
+        const hist = proposalHistory[proposta];
+        let evolucao = "Nova na última versão";
+        if (hist && hist.some(h => h.dsIndex < latestIndex)) {
+          evolucao = "Mantida (já existia antes)";
+        }
+
+        const values = [
+          get(row, ["Prefixo", "PREFIXO", "A", "M"]),
+          proposta,
+          get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"]),
+          get(row, ["Situação da Popó", "Situação da Proposta", "E"]),
+          get(row, ["DEPENDÊNCIA", "Dependência", "F"]),
+          parseNumber(get(row, ["VALOR TOTAL", "Valor Total", "I"])).toString().replace(".", ","),
+          get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"]),
+          get(row, ["SUPER COMERCIAL", "Super Comercial", "L"]),
+          evolucao
+        ].map((v) =>
+          `"${String(v ?? "").replace(/"/g, '""')}"`
+        );
+        lines.push(values.join(";"));
+      });
+
+      const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "propostas_filtradas.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    btnExportPNG.addEventListener("click", () => {
+      const dash = document.getElementById("dashboard");
+      html2canvas(dash, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#f0fdf4"
+      }).then((canvas) => {
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "painel_propostas.png";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
