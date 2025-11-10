@@ -284,7 +284,6 @@
       font-weight: 700;
     }
     
-    /* Novo estilo para o painel de resumo */
     .summary-panel {
       background: linear-gradient(135deg, var(--agro-green-dark) 0%, var(--agro-green) 100%);
       border-radius: 18px;
@@ -331,35 +330,70 @@
       margin-top: 0.5rem;
     }
     
-    .export-buttons {
+    .table-controls {
       display: flex;
       gap: 1rem;
-      margin-top: 1.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      background: var(--agro-beige);
+      padding: 1rem;
+      border-radius: 12px;
+      border: 2px solid var(--agro-sage);
+      margin-bottom: 1rem;
+    }
+    
+    .control-group {
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .control-label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--agro-green-dark);
+      margin-bottom: 0.5rem;
+    }
+    
+    .export-buttons {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
     }
     
     .btn-export {
-      flex: 1;
-      background: rgba(255, 255, 255, 0.95);
-      color: var(--agro-green-dark);
-      padding: 0.85rem 1.25rem;
+      background: linear-gradient(135deg, var(--agro-green) 0%, var(--agro-green-light) 100%);
+      color: white;
+      padding: 0.75rem 1.25rem;
       border-radius: 10px;
       font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       transition: all 0.3s ease;
-      border: 2px solid rgba(255, 255, 255, 0.5);
+      border: none;
       cursor: pointer;
       display: flex;
       align-items: center;
-      justify-content: center;
       gap: 0.5rem;
+      box-shadow: 0 3px 10px rgba(90, 110, 44, 0.3);
     }
     
     .btn-export:hover {
-      background: white;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 5px 15px rgba(90, 110, 44, 0.4);
+    }
+    
+    .btn-export-secondary {
+      background: white;
+      color: var(--agro-green-dark);
+      border: 2px solid var(--agro-green);
+    }
+    
+    .btn-export-secondary:hover {
+      background: var(--agro-beige);
     }
   </style>
 </head>
@@ -411,7 +445,7 @@
       <div id="logContent"></div>
     </div>
 
-    <!-- Filtros + Resumo Redesenhado -->
+    <!-- Filtros + Resumo -->
     <section class="grid grid-cols-1 lg:grid-cols-[2fr,1fr] gap-6 mb-6">
       <!-- Filtros -->
       <div class="glass p-6 fade-in" style="animation-delay: 0.1s">
@@ -485,7 +519,7 @@
         </div>
       </div>
 
-      <!-- Painel de Resumo Redesenhado -->
+      <!-- Painel de Resumo -->
       <div class="summary-panel fade-in" style="animation-delay: 0.2s">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-black uppercase tracking-wide text-white flex items-center gap-2">
@@ -523,30 +557,18 @@
           </div>
         </div>
 
-        <div class="bg-white bg-opacity-10 rounded-lg p-3 mb-4">
+        <div class="bg-white bg-opacity-10 rounded-lg p-3 mb-3">
           <p class="text-xs text-white leading-relaxed font-semibold flex items-start gap-2">
             <i data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
             <span>Removidas: propostas que constavam em versões anteriores mas não aparecem na base atual.</span>
           </p>
         </div>
 
-        <div id="latestLabel" class="text-xs text-white text-center font-bold mb-3 opacity-90"></div>
-
-        <!-- Botões de Exportação -->
-        <div class="export-buttons">
-          <button id="btnExportCSV" class="btn-export">
-            <i data-lucide="download" class="w-4 h-4"></i>
-            <span>Exportar CSV</span>
-          </button>
-          <button id="btnExportPNG" class="btn-export">
-            <i data-lucide="image" class="w-4 h-4"></i>
-            <span>Exportar PNG</span>
-          </button>
-        </div>
+        <div id="latestLabel" class="text-xs text-white text-center font-bold opacity-90"></div>
       </div>
     </section>
 
-    <!-- Tabela principal + Painéis laterais -->
+    <!-- Tabela principal com controles + Painéis laterais -->
     <section class="grid grid-cols-1 xl:grid-cols-[3fr,1.4fr] gap-6 mb-6">
       <!-- Tabela principal -->
       <div class="glass p-6 fade-in" style="animation-delay: 0.3s">
@@ -555,13 +577,47 @@
             <i data-lucide="table" class="w-6 h-6"></i>
             Propostas - Base Atual
           </h2>
-          <span class="text-[0.7rem] font-black px-4 py-2 rounded-full border-2" style="background-color: var(--agro-beige); color: var(--agro-green-dark); border-color: var(--agro-green);">
-            Colunas principais
-          </span>
         </div>
+
+        <!-- Controles de Visualização e Exportação -->
+        <div class="table-controls">
+          <div class="control-group">
+            <label class="control-label">
+              <i data-lucide="layout-list" class="w-3.5 h-3.5 inline"></i>
+              Modo de Visualização
+            </label>
+            <select id="viewMode" class="w-full input-modern">
+              <option value="all">Todas as Propostas</option>
+              <option value="consolidated">Consolidado por Agência</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">
+              <i data-lucide="building-2" class="w-3.5 h-3.5 inline"></i>
+              Filtrar por Agência Específica
+            </label>
+            <select id="filterAgenciaEspecifica" class="w-full input-modern">
+              <option value="">Todas as Agências</option>
+            </select>
+          </div>
+
+          <div class="export-buttons">
+            <button id="btnExportCSV" class="btn-export">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>CSV</span>
+            </button>
+            <button id="btnExportPNG" class="btn-export btn-export-secondary">
+              <i data-lucide="image" class="w-4 h-4"></i>
+              <span>PNG</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabela -->
         <div class="overflow-auto max-h-[500px] scrollbar-thin rounded-xl border-2" style="border-color: var(--agro-sage);">
-          <table class="min-w-full table-modern">
-            <thead>
+          <table class="min-w-full table-modern" id="mainTable">
+            <thead id="tableHead">
               <tr>
                 <th class="px-3 py-3 text-left">Prefixo</th>
                 <th class="px-3 py-3 text-left">Proposta</th>
@@ -692,13 +748,11 @@
       logContainer.classList.add('hidden');
     });
     
-    // Sistema aprimorado de detecção de cabeçalhos - BUSCA TODAS AS COLUNAS
     function detectHeaderRow(sheet) {
       addLog("🔍 Iniciando detecção automática de TODOS os cabeçalhos...", 'info');
       
       const range = XLSX.utils.decode_range(sheet['!ref']);
       
-      // Mapeamento de colunas esperadas com suas variações
       const columnMappings = {
         'Prefixo': ['prefixo', 'prefix'],
         'Proposta': ['proposta', 'proposal', 'numero proposta', 'nº proposta'],
@@ -710,22 +764,17 @@
         'SuperComercial': ['super', 'super comercial', 'supervisor']
       };
       
-      // Procurar nas primeiras 10 linhas
       for (let row = range.s.r; row <= Math.min(range.s.r + 10, range.e.r); row++) {
         let matchCount = 0;
         let foundColumns = {};
-        let rowValues = [];
         
-        // Ler todas as células desta linha
         for (let col = range.s.c; col <= range.e.c; col++) {
           const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
           const cell = sheet[cellAddress];
           
           if (cell && cell.v) {
             const value = String(cell.v).toLowerCase().trim();
-            rowValues.push(value);
             
-            // Verificar contra cada tipo de coluna
             for (const [columnType, keywords] of Object.entries(columnMappings)) {
               if (keywords.some(keyword => value.includes(keyword))) {
                 if (!foundColumns[columnType]) {
@@ -740,26 +789,14 @@
         
         addLog(`  → Linha ${row + 1}: ${matchCount} colunas identificadas`, matchCount > 0 ? 'info' : 'warning');
         
-        // Se encontrou pelo menos 5 colunas principais, provavelmente é o cabeçalho
         if (matchCount >= 5) {
           addLog(`✓ CABEÇALHO COMPLETO DETECTADO NA LINHA ${row + 1}!`, 'success');
           addLog(`  Colunas identificadas: ${Object.keys(foundColumns).join(', ')}`, 'success');
-          
-          // Verificar se todas as colunas essenciais foram encontradas
-          const essentialColumns = ['Proposta', 'Cliente', 'Dependência'];
-          const missingEssential = essentialColumns.filter(col => !foundColumns[col]);
-          
-          if (missingEssential.length > 0) {
-            addLog(`  ⚠ ATENÇÃO: Colunas essenciais não encontradas: ${missingEssential.join(', ')}`, 'warning');
-            addLog(`  O sistema tentará usar variações de nome nas colunas`, 'info');
-          }
-          
           return row;
         }
       }
       
       addLog("⚠ Cabeçalho completo não detectado, usando linha 2 como fallback", 'warning');
-      addLog("  Algumas colunas podem não ser identificadas corretamente", 'warning');
       return 1;
     }
     
@@ -798,6 +835,10 @@
     const filterCliente = document.getElementById("filterCliente");
     const clearFilters = document.getElementById("clearFilters");
 
+    const viewMode = document.getElementById("viewMode");
+    const filterAgenciaEspecifica = document.getElementById("filterAgenciaEspecifica");
+
+    const tableHead = document.getElementById("tableHead");
     const tableBody = document.getElementById("tableBody");
     const agenciaBody = document.getElementById("agenciaBody");
     const removidasBody = document.getElementById("removidasBody");
@@ -814,6 +855,9 @@
     
     const situacaoPorAgenciaHead = document.getElementById("situacaoPorAgenciaHead");
     const situacaoPorAgenciaBody = document.getElementById("situacaoPorAgenciaBody");
+
+    viewMode.addEventListener("change", applyFilters);
+    filterAgenciaEspecifica.addEventListener("change", applyFilters);
 
     fileInput.addEventListener("change", async (e) => {
       const files = Array.from(e.target.files || []);
@@ -848,7 +892,7 @@
 
       if (!datasets.length) {
         addLog("✗ Nenhuma planilha válida foi carregada", 'error');
-        alert("Nenhuma planilha válida foi carregada. Verifique o arquivo e o xlsx.full.min.js.");
+        alert("Nenhuma planilha válida foi carregada.");
         resetUI();
         return;
       }
@@ -880,7 +924,7 @@
         reader.onload = (evt) => {
           try {
             if (typeof XLSX === "undefined") {
-              throw new Error("XLSX não encontrado. Verifique o arquivo xlsx.full.min.js.");
+              throw new Error("XLSX não encontrado.");
             }
             
             addLog(`  Processando binário...`, 'info');
@@ -892,11 +936,7 @@
             addLog(`  Lendo aba: "${sheetName}"`, 'info');
             
             const sheet = workbook.Sheets[sheetName];
-            
-            // DETECTAR AUTOMATICAMENTE TODOS OS CABEÇALHOS
             const headerRow = detectHeaderRow(sheet);
-            
-            // Ler dados a partir da linha do cabeçalho
             const rows = XLSX.utils.sheet_to_json(sheet, { 
               defval: "",
               range: headerRow
@@ -907,8 +947,7 @@
             if (rows.length > 0) {
               const firstRow = rows[0];
               const keys = Object.keys(firstRow);
-              addLog(`  Total de colunas na planilha: ${keys.length}`, 'info');
-              addLog(`  Primeiras colunas: ${keys.slice(0, 6).join(', ')}${keys.length > 6 ? '...' : ''}`, 'info');
+              addLog(`  Total de colunas: ${keys.length}`, 'info');
             }
             
             resolve(rows);
@@ -918,7 +957,7 @@
           }
         };
         reader.onerror = (err) => {
-          addLog(`  ✗ Erro ao ler arquivo: ${err}`, 'error');
+          addLog(`  ✗ Erro ao ler arquivo`, 'error');
           reject(err);
         };
         reader.readAsArrayBuffer(file);
@@ -1000,6 +1039,7 @@
 
       fillSelect(filterDependencia, Array.from(deps), "Todas");
       fillSelect(filterSituacao, Array.from(sits), "Todas");
+      fillSelect(filterAgenciaEspecifica, Array.from(deps), "Todas as Agências");
 
       filterEstado.innerHTML = '<option value="">Todos</option>';
       Array.from(estados)
@@ -1023,7 +1063,7 @@
           filterSuper.appendChild(opt);
         });
         
-      addLog(`✓ Filtros: ${deps.size} dependências, ${sits.size} situações, ${estados.size} estados`, 'success');
+      addLog(`✓ Filtros populados`, 'success');
     }
 
     [
@@ -1045,6 +1085,7 @@
       filterSuper.value = "";
       filterProposta.value = "";
       filterCliente.value = "";
+      filterAgenciaEspecifica.value = "";
       applyFilters();
     });
 
@@ -1060,8 +1101,9 @@
       const superSel = filterSuper.value.trim();
       const propostaBusca = filterProposta.value.trim().toLowerCase();
       const clienteBusca = filterCliente.value.trim().toLowerCase();
+      const agenciaEspecifica = filterAgenciaEspecifica.value.trim();
 
-      const filtered = latestRows.filter((row) => {
+      let filtered = latestRows.filter((row) => {
         const dep = String(get(row, ["DEPENDÊNCIA", "Dependência", "F"])).trim();
         const sit = String(get(row, ["Situação da Popó", "Situação da Proposta", "E"])).trim();
         const est = String(get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"])).trim();
@@ -1075,11 +1117,18 @@
         if (superSel && sup !== superSel) return false;
         if (propostaBusca && !proposta.includes(propostaBusca)) return false;
         if (clienteBusca && !cliente.includes(clienteBusca)) return false;
+        if (agenciaEspecifica && dep !== agenciaEspecifica) return false;
 
         return true;
       });
 
-      renderTable(filtered);
+      const mode = viewMode.value;
+      if (mode === 'consolidated') {
+        renderConsolidated(filtered);
+      } else {
+        renderTable(filtered);
+      }
+
       renderAgencias(filtered);
       renderSituacaoPorAgencia(filtered);
       renderRemovidas(depSel, sitSel, estSel, superSel);
@@ -1098,6 +1147,21 @@
     }
 
     function renderTable(rows) {
+      // Cabeçalho normal
+      tableHead.innerHTML = `
+        <tr>
+          <th class="px-3 py-3 text-left">Prefixo</th>
+          <th class="px-3 py-3 text-left">Proposta</th>
+          <th class="px-3 py-3 text-left">Cliente</th>
+          <th class="px-3 py-3 text-left">Situação</th>
+          <th class="px-3 py-3 text-left">Dependência</th>
+          <th class="px-3 py-3 text-right">Valor Total</th>
+          <th class="px-3 py-3 text-left">Estado</th>
+          <th class="px-3 py-3 text-left">Super</th>
+          <th class="px-3 py-3 text-left">Evolução</th>
+        </tr>
+      `;
+
       tableBody.innerHTML = "";
       
       if (!rows.length) {
@@ -1121,7 +1185,7 @@
         const valor = get(row, ["VALOR TOTAL", "Valor Total", "I"]);
 
         let evolucao = "Nova";
-        let evolClass = "text-white border-2" + " " + "bg-green-600 border-green-700";
+        let evolClass = "text-white border-2 bg-green-600 border-green-700";
         const hist = proposalHistory[proposta];
         if (hist && hist.some(h => h.dsIndex < latestIndex)) {
           evolucao = "Mantida";
@@ -1148,6 +1212,81 @@
         `;
         tableBody.appendChild(tr);
       });
+    }
+
+    function renderConsolidated(rows) {
+      // Cabeçalho consolidado
+      tableHead.innerHTML = `
+        <tr>
+          <th class="px-3 py-3 text-left">Agência (Dependência)</th>
+          <th class="px-3 py-3 text-center">Quantidade</th>
+          <th class="px-3 py-3 text-right">Valor Total</th>
+          <th class="px-3 py-3 text-center">Novas</th>
+          <th class="px-3 py-3 text-center">Mantidas</th>
+        </tr>
+      `;
+
+      tableBody.innerHTML = "";
+      
+      if (!rows.length) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-6 px-3 text-center text-gray-600 text-sm font-bold">
+              Nenhuma proposta encontrada com os filtros aplicados.
+            </td>
+          </tr>`;
+        return;
+      }
+
+      const consolidated = {};
+      
+      rows.forEach((row) => {
+        const dep = get(row, ["DEPENDÊNCIA", "Dependência", "F"]) || "Sem identificação";
+        const valor = parseNumber(get(row, ["VALOR TOTAL", "Valor Total", "I"]));
+        const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim();
+        
+        if (!consolidated[dep]) {
+          consolidated[dep] = { qtd: 0, valor: 0, novas: 0, mantidas: 0 };
+        }
+        
+        consolidated[dep].qtd += 1;
+        consolidated[dep].valor += valor;
+        
+        const hist = proposalHistory[proposta];
+        if (hist && hist.some(h => h.dsIndex < latestIndex)) {
+          consolidated[dep].mantidas += 1;
+        } else {
+          consolidated[dep].novas += 1;
+        }
+      });
+
+      Object.entries(consolidated)
+        .sort((a, b) => b[1].valor - a[1].valor)
+        .forEach(([dep, data]) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="px-3 py-2 font-black text-gray-800">${dep}</td>
+            <td class="px-3 py-2 text-center">
+              <span class="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-white font-black text-sm border-2" style="background-color: var(--agro-green); border-color: var(--agro-green-dark);">
+                ${data.qtd}
+              </span>
+            </td>
+            <td class="px-3 py-2 text-right font-black" style="color: var(--agro-green-dark);">
+              ${data.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+            </td>
+            <td class="px-3 py-2 text-center">
+              <span class="badge text-white border-2 bg-green-600 border-green-700">
+                ${data.novas}
+              </span>
+            </td>
+            <td class="px-3 py-2 text-center">
+              <span class="badge text-amber-900 border-2 bg-amber-200 border-amber-400">
+                ${data.mantidas}
+              </span>
+            </td>
+          `;
+          tableBody.appendChild(tr);
+        });
     }
 
     function renderAgencias(rows) {
@@ -1331,7 +1470,7 @@
         situacaoEvolBody.innerHTML = `
           <tr>
             <td colspan="${datasets.length + 1}" class="py-4 px-3 text-center text-gray-600 text-xs font-bold">
-              Sem dados para exibir a evolução.
+              Sem dados para exibir.
             </td>
           </tr>
         `;
@@ -1386,12 +1525,14 @@
     btnExportCSV.addEventListener("click", () => {
       if (latestIndex < 0 || !latestRows || !latestRows.length) return;
 
+      // Aplicar mesmos filtros
       const depSel = filterDependencia.value.trim();
       const sitSel = filterSituacao.value.trim();
       const estSel = filterEstado.value.trim();
       const superSel = filterSuper.value.trim();
       const propostaBusca = filterProposta.value.trim().toLowerCase();
       const clienteBusca = filterCliente.value.trim().toLowerCase();
+      const agenciaEspecifica = filterAgenciaEspecifica.value.trim();
 
       const filtered = latestRows.filter((row) => {
         const dep = String(get(row, ["DEPENDÊNCIA", "Dependência", "F"])).trim();
@@ -1407,45 +1548,89 @@
         if (superSel && sup !== superSel) return false;
         if (propostaBusca && !proposta.includes(propostaBusca)) return false;
         if (clienteBusca && !cliente.includes(clienteBusca)) return false;
+        if (agenciaEspecifica && dep !== agenciaEspecifica) return false;
+
         return true;
       });
 
-      const header = [
-        "Prefixo",
-        "Proposta",
-        "Nome do Cliente",
-        "Situação da Proposta",
-        "Dependência",
-        "Valor Total",
-        "Estado da Solicitação",
-        "Super Comercial",
-        "Evolução"
-      ];
-      const lines = [header.join(";")];
+      const mode = viewMode.value;
+      let lines = [];
 
-      filtered.forEach((row) => {
-        const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim();
-        const hist = proposalHistory[proposta];
-        let evolucao = "Nova na última versão";
-        if (hist && hist.some(h => h.dsIndex < latestIndex)) {
-          evolucao = "Mantida (já existia antes)";
-        }
+      if (mode === 'consolidated') {
+        const header = ["Agência", "Quantidade", "Valor Total", "Novas", "Mantidas"];
+        lines.push(header.join(";"));
 
-        const values = [
-          get(row, ["Prefixo", "PREFIXO", "A", "M"]),
-          proposta,
-          get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"]),
-          get(row, ["Situação da Popó", "Situação da Proposta", "E"]),
-          get(row, ["DEPENDÊNCIA", "Dependência", "F"]),
-          parseNumber(get(row, ["VALOR TOTAL", "Valor Total", "I"])).toString().replace(".", ","),
-          get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"]),
-          get(row, ["SUPER COMERCIAL", "Super Comercial", "L"]),
-          evolucao
-        ].map((v) =>
-          `"${String(v ?? "").replace(/"/g, '""')}"`
-        );
-        lines.push(values.join(";"));
-      });
+        const consolidated = {};
+        filtered.forEach((row) => {
+          const dep = get(row, ["DEPENDÊNCIA", "Dependência", "F"]) || "Sem identificação";
+          const valor = parseNumber(get(row, ["VALOR TOTAL", "Valor Total", "I"]));
+          const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim();
+          
+          if (!consolidated[dep]) {
+            consolidated[dep] = { qtd: 0, valor: 0, novas: 0, mantidas: 0 };
+          }
+          
+          consolidated[dep].qtd += 1;
+          consolidated[dep].valor += valor;
+          
+          const hist = proposalHistory[proposta];
+          if (hist && hist.some(h => h.dsIndex < latestIndex)) {
+            consolidated[dep].mantidas += 1;
+          } else {
+            consolidated[dep].novas += 1;
+          }
+        });
+
+        Object.entries(consolidated)
+          .sort((a, b) => b[1].valor - a[1].valor)
+          .forEach(([dep, data]) => {
+            const values = [
+              dep,
+              data.qtd,
+              data.valor.toString().replace(".", ","),
+              data.novas,
+              data.mantidas
+            ].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`);
+            lines.push(values.join(";"));
+          });
+      } else {
+        const header = [
+          "Prefixo",
+          "Proposta",
+          "Nome do Cliente",
+          "Situação da Proposta",
+          "Dependência",
+          "Valor Total",
+          "Estado da Solicitação",
+          "Super Comercial",
+          "Evolução"
+        ];
+        lines.push(header.join(";"));
+
+        filtered.forEach((row) => {
+          const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim();
+          const hist = proposalHistory[proposta];
+          let evolucao = "Nova na última versão";
+          if (hist && hist.some(h => h.dsIndex < latestIndex)) {
+            evolucao = "Mantida (já existia antes)";
+          }
+
+          const values = [
+            get(row, ["Prefixo", "PREFIXO", "A", "M"]),
+            proposta,
+            get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"]),
+            get(row, ["Situação da Popó", "Situação da Proposta", "E"]),
+            get(row, ["DEPENDÊNCIA", "Dependência", "F"]),
+            parseNumber(get(row, ["VALOR TOTAL", "Valor Total", "I"])).toString().replace(".", ","),
+            get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"]),
+            get(row, ["SUPER COMERCIAL", "Super Comercial", "L"]),
+            evolucao
+          ].map((v) =>
+            `"${String(v ?? "").replace(/"/g, '""')}"`
+          );
+          lines.push(values.join(";"));
+        });
+      }
 
       const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
