@@ -390,7 +390,7 @@
       <div id="logContent"></div>
     </div>
 
-    <!-- Cards de Resumo -->
+    <!-- Cards de Resumo (dinâmicos pelos filtros) -->
     <div class="grid grid-cols-4" style="margin-bottom: 1.5rem;">
       <div class="stat-card">
         <div class="stat-label">Total de Propostas</div>
@@ -400,17 +400,17 @@
       <div class="stat-card">
         <div class="stat-label">Valor Total</div>
         <div id="statValor" class="stat-value" style="font-size: 1.5rem;">R$ 0</div>
-        <div style="font-size: 0.75rem; color: var(--text-secondary);">Somado</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary);">Somado (filtros)</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Novas</div>
         <div id="statNovas" class="stat-value">0</div>
-        <div style="font-size: 0.75rem; color: var(--text-secondary);">Propostas</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary);">Propostas filtradas</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Removidas</div>
         <div id="statRemovidas" class="stat-value">0</div>
-        <div style="font-size: 0.75rem; color: var(--text-secondary);">Propostas</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary);">Dentro dos filtros</div>
       </div>
     </div>
 
@@ -493,11 +493,22 @@
     <!-- Painéis Adicionais -->
     <div class="grid grid-cols-3">
       <!-- Total por Agência -->
-      <div class="card" style="padding: 1.5rem;">
-        <h2 class="section-title">
-          <i data-lucide="building-2" style="width: 1.25rem; height: 1.25rem;"></i>
-          Por Agência
-        </h2>
+      <div id="agenciaCard" class="card" style="padding: 1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+          <h2 class="section-title" style="margin-bottom:0;">
+            <i data-lucide="building-2" style="width: 1.25rem; height: 1.25rem;"></i>
+            Por Agência
+          </h2>
+          <!-- NOVO: Export Por Agência -->
+          <div style="display:flex; gap:0.25rem; flex-wrap:wrap;">
+            <button id="btnExportAgenciaCSV" class="btn btn-secondary" style="padding:0.25rem 0.5rem; font-size:0.7rem;">
+              CSV
+            </button>
+            <button id="btnExportAgenciaPNG" class="btn btn-secondary" style="padding:0.25rem 0.5rem; font-size:0.7rem;">
+              PNG
+            </button>
+          </div>
+        </div>
         <div class="table-container scrollbar-thin" style="max-height: 300px;">
           <table>
             <thead>
@@ -581,6 +592,7 @@
     let allColumns = [];
     let visibleColumns = new Set();
     let columnFilters = {};
+    let currentFilteredRows = []; // NOVO: mantém o recorte atual para uso em todos os painéis/exports
     
     // === COLUMN DETECTION ===
     function detectHeaderRow(sheet) {
@@ -636,7 +648,6 @@
     
     // Função melhorada para buscar valores de colunas
     function getColumnValue(row, type) {
-      // Primeiro tenta pelo mapeamento
       if (columnMapping[type]) {
         const mappedName = columnMapping[type];
         if (row[mappedName] !== undefined && row[mappedName] !== null && row[mappedName] !== "") {
@@ -644,7 +655,6 @@
         }
       }
       
-      // Fallback: busca por nome da coluna diretamente
       const typeVariations = {
         'Valor': ['VALOR TOTAL', 'Valor Total', 'valor total', 'VALOR', 'Valor', 'valor'],
         'Proposta': ['PROPOSTA', 'Proposta', 'proposta'],
@@ -664,7 +674,6 @@
         }
       }
       
-      // Busca flexível por qualquer coluna que contenha a palavra-chave
       const keywords = {
         'Valor': ['valor', 'total', 'montante'],
         'Proposta': ['proposta'],
@@ -692,12 +701,9 @@
     function parseNumber(val) {
       if (!val && val !== 0) return 0;
       if (typeof val === "number") return val;
-      
-      // Remove pontos de milhar e substitui vírgula decimal por ponto
       const str = String(val).trim();
       const clean = str.replace(/\./g, "").replace(",", ".");
       const n = parseFloat(clean);
-      
       return isNaN(n) ? 0 : n;
     }
     
@@ -717,6 +723,7 @@
       latestRows = [];
       columnMapping = {};
       allColumns = [];
+      currentFilteredRows = [];
       
       for (const file of files) {
         try {
@@ -747,11 +754,10 @@
       initializeVisibleColumns();
       buildColumnSelector();
       buildFilters();
-      applyFilters();
+      applyFilters(); // já alimenta currentFilteredRows
       
       addLog("✓ Processamento concluído!", 'success');
       
-      // Log de debug para valores
       if (latestRows.length > 0) {
         const firstRow = latestRows[0];
         const valorTest = getColumnValue(firstRow, 'Valor');
@@ -804,7 +810,9 @@
         const existsNow = history.some(h => h.dsIndex === latestIndex);
         
         if (existedBefore && !existsNow) {
-          const lastPrev = history.filter(h => h.dsIndex < latestIndex).sort((a, b) => b.dsIndex - a.dsIndex)[0];
+          const lastPrev = history
+            .filter(h => h.dsIndex < latestIndex)
+            .sort((a, b) => b.dsIndex - a.dsIndex)[0];
           removedProposals.push({ proposta, row: lastPrev.row });
         }
       });
@@ -813,7 +821,6 @@
     function detectAllColumns() {
       allColumns = [];
       if (!latestRows.length) return;
-      
       const firstRow = latestRows[0];
       allColumns = Object.keys(firstRow).filter(key => key.trim() !== "");
       addLog(`📋 ${allColumns.length} colunas detectadas`, 'info');
@@ -949,15 +956,15 @@
         for (const [col, filterVal] of Object.entries(columnFilters)) {
           if (filterVal && String(row[col]).trim() !== filterVal) return false;
         }
-        
         // Filtro de agência
         if (agenciaFilter) {
           const dep = getColumnValue(row, 'Dependência');
           if (dep !== agenciaFilter) return false;
         }
-        
         return true;
       });
+      
+      currentFilteredRows = filtered; // NOVO: guarda o recorte atual
       
       const mode = document.getElementById('viewMode').value;
       if (mode === 'consolidated') {
@@ -969,12 +976,12 @@
       updateStats(filtered);
       renderAgencias(filtered);
       renderSituacaoAgencia(filtered);
-      renderRemovidas(filtered);
+      renderRemovidas(); // agora usa filtros internos
     }
     
     document.getElementById('viewMode').addEventListener('change', applyFilters);
     
-    // === RENDERING ===
+    // === RENDERING PRINCIPAL ===
     function renderTable(rows) {
       const tableHead = document.getElementById('tableHead');
       const tableBody = document.getElementById('tableBody');
@@ -996,7 +1003,6 @@
           const td = document.createElement('td');
           const val = row[col];
           
-          // Detecta se é coluna de valor
           if (col.toLowerCase().includes('valor') || col.toLowerCase().includes('total')) {
             td.style.textAlign = 'right';
             td.style.fontWeight = '700';
@@ -1010,7 +1016,6 @@
           tr.appendChild(td);
         });
         
-        // Evolução
         const tdEvol = document.createElement('td');
         const proposta = String(getColumnValue(row, 'Proposta')).trim();
         const sit = getColumnValue(row, 'Situação');
@@ -1081,7 +1086,9 @@
           tr.innerHTML = `
             <td style="font-weight: 600;">${dep}</td>
             <td style="text-align: center;"><span class="badge badge-info">${data.qtd}</span></td>
-            <td style="text-align: right; font-weight: 700; color: var(--primary);">${data.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td style="text-align: right; font-weight: 700; color: var(--primary);">
+              ${data.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </td>
             <td style="text-align: center;"><span class="badge badge-success">${data.novas}</span></td>
             <td style="text-align: center;"><span class="badge badge-warning">${data.mantidas}</span></td>
             <td style="text-align: center;"><span class="badge badge-info">${data.alteradas}</span></td>
@@ -1107,9 +1114,9 @@
       return { type: 'mantida', previousSituacao: prevSit, currentSituacao };
     }
     
+    // === ESTATÍSTICAS (dinâmicas pelos filtros) ===
     function updateStats(rows) {
       const total = rows.length;
-      
       let valor = 0;
       let novas = 0;
       
@@ -1123,14 +1130,29 @@
         if (evolution.type === 'nova') novas++;
       });
       
+      // Removidas também respeitando filtros
+      const agenciaFilter = document.getElementById('filterAgencia').value;
+      let removidasFiltradas = 0;
+      removedProposals.forEach(({ row }) => {
+        for (const [col, filterVal] of Object.entries(columnFilters)) {
+          if (filterVal && String(row[col]).trim() !== filterVal) return;
+        }
+        if (agenciaFilter) {
+          const dep = getColumnValue(row, 'Dependência');
+          if (dep !== agenciaFilter) return;
+        }
+        removidasFiltradas++;
+      });
+      
       document.getElementById('statTotal').textContent = total;
       document.getElementById('statValor').textContent = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
       document.getElementById('statNovas').textContent = novas;
-      document.getElementById('statRemovidas').textContent = removedProposals.length;
+      document.getElementById('statRemovidas').textContent = removidasFiltradas;
       
-      addLog(`💰 Valor total calculado: ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 'success');
+      addLog(`💰 Valor total filtrado: ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 'success');
     }
     
+    // === POR AGÊNCIA (dinâmico pelos filtros) ===
     function renderAgencias(rows) {
       const body = document.getElementById('agenciaBody');
       body.innerHTML = '';
@@ -1144,19 +1166,31 @@
         map[dep].valor += val;
       });
       
-      Object.entries(map)
-        .sort((a, b) => b[1].valor - a[1].valor)
-        .forEach(([dep, data]) => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td style="font-weight: 600;">${dep}</td>
-            <td style="text-align: center;"><span class="badge badge-info">${data.qtd}</span></td>
-            <td style="text-align: right; font-weight: 700; color: var(--primary);">${data.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-          `;
-          body.appendChild(tr);
-        });
+      const entries = Object.entries(map).sort((a, b) => b[1].valor - a[1].valor);
+      
+      if (!entries.length) {
+        body.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:1rem; color:var(--text-secondary);">
+          Sem dados para os filtros aplicados
+        </td></tr>`;
+        return;
+      }
+      
+      entries.forEach(([dep, data]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight: 600;">${dep}</td>
+          <td style="text-align: center;">
+            <span class="badge badge-info">${data.qtd}</span>
+          </td>
+          <td style="text-align: right; font-weight: 700; color: var(--primary);">
+            ${data.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </td>
+        `;
+        body.appendChild(tr);
+      });
     }
     
+    // === SITUAÇÃO / AGÊNCIA (dinâmico pelos filtros) ===
     function renderSituacaoAgencia(rows) {
       const head = document.getElementById('situacaoAgenciaHead');
       const body = document.getElementById('situacaoAgenciaBody');
@@ -1198,26 +1232,51 @@
       });
     }
     
-    function renderRemovidas(filteredRows) {
+    // === REMOVIDAS (dinâmico pelos filtros) ===
+    function renderRemovidas() {
       const body = document.getElementById('removidasBody');
       body.innerHTML = '';
       
-      removedProposals.slice(0, 50).forEach(({ proposta, row }) => {
+      if (!removedProposals.length) {
+        body.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 1rem; color: var(--text-secondary);">Nenhuma proposta removida</td></tr>';
+        return;
+      }
+      
+      const agenciaFilter = document.getElementById('filterAgencia').value;
+      const filtradas = [];
+      
+      removedProposals.forEach(({ proposta, row }) => {
+        // aplica os mesmos filtros de coluna
+        for (const [col, filterVal] of Object.entries(columnFilters)) {
+          if (filterVal && String(row[col]).trim() !== filterVal) return;
+        }
+        // aplica filtro de agência
+        if (agenciaFilter) {
+          const dep = getColumnValue(row, 'Dependência');
+          if (dep !== agenciaFilter) return;
+        }
+        filtradas.push({ proposta, row });
+      });
+      
+      if (!filtradas.length) {
+        body.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 1rem; color: var(--text-secondary);">Nenhuma proposta removida nos filtros atuais</td></tr>';
+        return;
+      }
+      
+      filtradas.slice(0, 50).forEach(({ proposta, row }) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td style="font-weight: 700; color: #dc2626;">${proposta}</td>
           <td>${getColumnValue(row, 'Cliente') || '-'}</td>
-          <td style="text-align: right; font-weight: 700; color: var(--primary);">${parseNumber(getColumnValue(row, 'Valor')).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+          <td style="text-align: right; font-weight: 700; color: var(--primary);">
+            ${parseNumber(getColumnValue(row, 'Valor')).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </td>
         `;
         body.appendChild(tr);
       });
-      
-      if (!removedProposals.length) {
-        body.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 1rem; color: var(--text-secondary);">Nenhuma proposta removida</td></tr>';
-      }
     }
     
-    // === EXPORT ===
+    // === EXPORT GERAL (respeitando filtros e colunas visíveis) ===
     document.getElementById('btnExportCSV').addEventListener('click', () => {
       if (!latestRows.length) return;
       
@@ -1254,24 +1313,79 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'propostas.csv';
+      a.download = 'propostas_filtradas.csv';
       a.click();
       URL.revokeObjectURL(url);
       
-      addLog('✓ CSV exportado', 'success');
+      addLog('✓ CSV (geral) exportado com filtros aplicados', 'success');
     });
     
     document.getElementById('btnExportPNG').addEventListener('click', () => {
-      addLog('📸 Gerando PNG...', 'info');
+      addLog('📸 Gerando PNG do painel visível...', 'info');
       html2canvas(document.body, { scale: 2 }).then(canvas => {
         canvas.toBlob(blob => {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = 'painel.png';
+          a.download = 'painel_propostas.png';
           a.click();
           URL.revokeObjectURL(url);
-          addLog('✓ PNG exportado', 'success');
+          addLog('✓ PNG do painel exportado', 'success');
+        });
+      });
+    });
+    
+    // === EXPORT POR AGÊNCIA (NOVO) ===
+    const btnExportAgenciaCSV = document.getElementById('btnExportAgenciaCSV');
+    const btnExportAgenciaPNG = document.getElementById('btnExportAgenciaPNG');
+    
+    btnExportAgenciaCSV.addEventListener('click', () => {
+      const rows = currentFilteredRows.length ? currentFilteredRows : latestRows;
+      if (!rows.length) return;
+      
+      const map = {};
+      rows.forEach(row => {
+        const dep = getColumnValue(row, 'Dependência') || 'Sem identificação';
+        const val = parseNumber(getColumnValue(row, 'Valor'));
+        if (!map[dep]) map[dep] = { qtd: 0, valor: 0 };
+        map[dep].qtd++;
+        map[dep].valor += val;
+      });
+      
+      const entries = Object.entries(map).sort((a, b) => b[1].valor - a[1].valor);
+      if (!entries.length) return;
+      
+      const lines = ['Agência;Quantidade;Valor Total'];
+      entries.forEach(([dep, data]) => {
+        lines.push(
+          `"${dep}";"${data.qtd}";"${data.valor.toFixed(2).replace('.', ',')}"`
+        );
+      });
+      
+      const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'por_agencia_filtrado.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      addLog('✓ CSV Por Agência exportado com filtros aplicados', 'success');
+    });
+    
+    btnExportAgenciaPNG.addEventListener('click', () => {
+      const card = document.getElementById('agenciaCard');
+      if (!card) return;
+      addLog('📸 Gerando PNG do quadro Por Agência...', 'info');
+      html2canvas(card, { scale: 2 }).then(canvas => {
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'por_agencia_filtrado.png';
+          a.click();
+          URL.revokeObjectURL(url);
+          addLog('✓ PNG Por Agência exportado com filtros aplicados', 'success');
         });
       });
     });
