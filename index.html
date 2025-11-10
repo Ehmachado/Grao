@@ -395,6 +395,20 @@
     .btn-export-secondary:hover {
       background: var(--agro-beige);
     }
+    
+    .evolution-badge {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      font-size: 0.65rem;
+    }
+    
+    .evolution-arrow {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-weight: 700;
+    }
   </style>
 </head>
 <body class="min-h-screen">
@@ -469,7 +483,7 @@
           <div>
             <label class="block mb-2 text-xs font-black uppercase tracking-wide flex items-center gap-1" style="color: var(--agro-green-dark);">
               <i data-lucide="building-2" class="w-4 h-4"></i>
-              Dependência (F)
+              Dependência
             </label>
             <select id="filterDependencia" class="w-full input-modern">
               <option value="">Todas</option>
@@ -478,7 +492,7 @@
           <div>
             <label class="block mb-2 text-xs font-black uppercase tracking-wide flex items-center gap-1" style="color: var(--agro-green-dark);">
               <i data-lucide="file-check" class="w-4 h-4"></i>
-              Situação (E)
+              Situação
             </label>
             <select id="filterSituacao" class="w-full input-modern">
               <option value="">Todas</option>
@@ -487,7 +501,7 @@
           <div>
             <label class="block mb-2 text-xs font-black uppercase tracking-wide flex items-center gap-1" style="color: var(--agro-green-dark);">
               <i data-lucide="map-pin" class="w-4 h-4"></i>
-              Estado (K)
+              Estado
             </label>
             <select id="filterEstado" class="w-full input-modern">
               <option value="">Todos</option>
@@ -496,7 +510,7 @@
           <div>
             <label class="block mb-2 text-xs font-black uppercase tracking-wide flex items-center gap-1" style="color: var(--agro-green-dark);">
               <i data-lucide="user-check" class="w-4 h-4"></i>
-              Super Comercial (L)
+              Super Comercial
             </label>
             <select id="filterSuper" class="w-full input-modern">
               <option value="">Todos</option>
@@ -505,14 +519,14 @@
           <div>
             <label class="block mb-2 text-xs font-black uppercase tracking-wide flex items-center gap-1" style="color: var(--agro-green-dark);">
               <i data-lucide="hash" class="w-4 h-4"></i>
-              Proposta (C)
+              Proposta
             </label>
             <input id="filterProposta" placeholder="Código exato ou parte" class="w-full input-modern" />
           </div>
           <div>
             <label class="block mb-2 text-xs font-black uppercase tracking-wide flex items-center gap-1" style="color: var(--agro-green-dark);">
               <i data-lucide="users" class="w-4 h-4"></i>
-              Cliente (D)
+              Cliente
             </label>
             <input id="filterCliente" placeholder="Nome contém..." class="w-full input-modern" />
           </div>
@@ -748,10 +762,14 @@
       logContainer.classList.add('hidden');
     });
     
+    // Mapeamento global de colunas detectadas
+    let columnMapping = {};
+    
     function detectHeaderRow(sheet) {
       addLog("🔍 Iniciando detecção automática de TODOS os cabeçalhos...", 'info');
       
       const range = XLSX.utils.decode_range(sheet['!ref']);
+      columnMapping = {}; // Reset
       
       const columnMappings = {
         'Prefixo': ['prefixo', 'prefix'],
@@ -774,13 +792,14 @@
           
           if (cell && cell.v) {
             const value = String(cell.v).toLowerCase().trim();
+            const colLetter = String.fromCharCode(65 + col);
             
             for (const [columnType, keywords] of Object.entries(columnMappings)) {
               if (keywords.some(keyword => value.includes(keyword))) {
                 if (!foundColumns[columnType]) {
-                  foundColumns[columnType] = value;
+                  foundColumns[columnType] = cell.v; // Nome original da coluna
                   matchCount++;
-                  addLog(`    ✓ ${columnType} encontrado: "${cell.v}" (coluna ${String.fromCharCode(65 + col)})`, 'success');
+                  addLog(`    ✓ ${columnType} encontrado: "${cell.v}" (coluna ${colLetter})`, 'success');
                 }
               }
             }
@@ -790,8 +809,9 @@
         addLog(`  → Linha ${row + 1}: ${matchCount} colunas identificadas`, matchCount > 0 ? 'info' : 'warning');
         
         if (matchCount >= 5) {
+          columnMapping = foundColumns;
           addLog(`✓ CABEÇALHO COMPLETO DETECTADO NA LINHA ${row + 1}!`, 'success');
-          addLog(`  Colunas identificadas: ${Object.keys(foundColumns).join(', ')}`, 'success');
+          addLog(`  Mapeamento salvo: ${Object.keys(foundColumns).join(', ')}`, 'success');
           return row;
         }
       }
@@ -800,12 +820,36 @@
       return 1;
     }
     
-    function get(row, keys) {
-      for (const k of keys) {
-        if (row[k] !== undefined && row[k] !== null && row[k] !== "") {
-          return row[k];
+    // Função melhorada para buscar valores usando o mapeamento
+    function getColumn(row, columnType) {
+      // Primeiro tenta usar o mapeamento detectado
+      if (columnMapping[columnType]) {
+        const colName = columnMapping[columnType];
+        if (row[colName] !== undefined && row[colName] !== null && row[colName] !== "") {
+          return row[colName];
         }
       }
+      
+      // Fallback para tentativas com nomes conhecidos
+      const fallbacks = {
+        'Prefixo': ['Prefixo', 'PREFIXO', 'A', 'M'],
+        'Proposta': ['Proposta', 'PROPOSTA', 'C'],
+        'Cliente': ['Nome do Cliente', 'NOME DO CLIENTE', 'D', 'Cliente'],
+        'Situação': ['Situação da Popó', 'Situação da Proposta', 'E', 'Situação', 'SITUAÇÃO'],
+        'Dependência': ['DEPENDÊNCIA', 'Dependência', 'F', 'Agência'],
+        'Valor': ['VALOR TOTAL', 'Valor Total', 'I', 'Valor'],
+        'Estado': ['ESTADO DA SOLICITAÇÃO', 'Estado da Solicitação', 'K', 'Estado'],
+        'SuperComercial': ['SUPER COMERCIAL', 'Super Comercial', 'L', 'Super']
+      };
+      
+      if (fallbacks[columnType]) {
+        for (const key of fallbacks[columnType]) {
+          if (row[key] !== undefined && row[key] !== null && row[key] !== "") {
+            return row[key];
+          }
+        }
+      }
+      
       return "";
     }
 
@@ -873,6 +917,7 @@
       removedProposals = [];
       latestIndex = -1;
       latestRows = [];
+      columnMapping = {};
 
       for (const file of files) {
         try {
@@ -914,6 +959,7 @@
       applyFilters();
       
       addLog("✓ Processamento concluído com sucesso!", 'success');
+      addLog(`📋 Colunas mapeadas: ${Object.keys(columnMapping).join(', ')}`, 'info');
       
       lucide.createIcons();
     });
@@ -944,12 +990,6 @@
             
             addLog(`  ✓ Dados extraídos: ${rows.length} linhas`, 'success');
             
-            if (rows.length > 0) {
-              const firstRow = rows[0];
-              const keys = Object.keys(firstRow);
-              addLog(`  Total de colunas: ${keys.length}`, 'info');
-            }
-            
             resolve(rows);
           } catch (err) {
             addLog(`  ✗ Erro: ${err.message}`, 'error');
@@ -971,13 +1011,16 @@
       datasets.forEach((ds, dsIndex) => {
         let dsProposals = 0;
         (ds.rows || []).forEach((row) => {
-          const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim();
+          const proposta = String(getColumn(row, 'Proposta')).trim();
           if (!proposta) return;
+          
+          const situacao = String(getColumn(row, 'Situação')).trim();
+          
           if (!proposalHistory[proposta]) {
             proposalHistory[proposta] = [];
             totalProposals++;
           }
-          proposalHistory[proposta].push({ dsIndex, row });
+          proposalHistory[proposta].push({ dsIndex, row, situacao });
           dsProposals++;
         });
         addLog(`  ${ds.name}: ${dsProposals} propostas`, 'info');
@@ -1014,16 +1057,21 @@
       const supers = new Set();
 
       (latestRows || []).forEach((row) => {
-        deps.add(get(row, ["DEPENDÊNCIA", "Dependência", "F"]));
-        sits.add(get(row, ["Situação da Popó", "Situação da Proposta", "E"]));
-        estados.add(get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"]));
-        supers.add(get(row, ["SUPER COMERCIAL", "Super Comercial", "L"]));
+        const dep = getColumn(row, 'Dependência');
+        const sit = getColumn(row, 'Situação');
+        const est = getColumn(row, 'Estado');
+        const sup = getColumn(row, 'SuperComercial');
+        
+        if (dep) deps.add(dep);
+        if (sit) sits.add(sit);
+        if (est) estados.add(est);
+        if (sup) supers.add(sup);
       });
 
       function fillSelect(select, values, allLabel) {
         const current = select.value;
         select.innerHTML = `<option value="">${allLabel}</option>`;
-        values
+        Array.from(values)
           .filter((v) => v && String(v).trim() !== "")
           .sort()
           .forEach((v) => {
@@ -1037,33 +1085,13 @@
         }
       }
 
-      fillSelect(filterDependencia, Array.from(deps), "Todas");
-      fillSelect(filterSituacao, Array.from(sits), "Todas");
-      fillSelect(filterAgenciaEspecifica, Array.from(deps), "Todas as Agências");
-
-      filterEstado.innerHTML = '<option value="">Todos</option>';
-      Array.from(estados)
-        .filter((v) => v && String(v).trim() !== "")
-        .sort()
-        .forEach((v) => {
-          const opt = document.createElement("option");
-          opt.value = v;
-          opt.textContent = v;
-          filterEstado.appendChild(opt);
-        });
-
-      filterSuper.innerHTML = '<option value="">Todos</option>';
-      Array.from(supers)
-        .filter((v) => v && String(v).trim() !== "")
-        .sort()
-        .forEach((v) => {
-          const opt = document.createElement("option");
-          opt.value = v;
-          opt.textContent = v;
-          filterSuper.appendChild(opt);
-        });
+      fillSelect(filterDependencia, deps, "Todas");
+      fillSelect(filterSituacao, sits, "Todas");
+      fillSelect(filterEstado, estados, "Todos");
+      fillSelect(filterSuper, supers, "Todos");
+      fillSelect(filterAgenciaEspecifica, deps, "Todas as Agências");
         
-      addLog(`✓ Filtros populados`, 'success');
+      addLog(`✓ Filtros populados: ${deps.size} dependências, ${sits.size} situações`, 'success');
     }
 
     [
@@ -1104,12 +1132,12 @@
       const agenciaEspecifica = filterAgenciaEspecifica.value.trim();
 
       let filtered = latestRows.filter((row) => {
-        const dep = String(get(row, ["DEPENDÊNCIA", "Dependência", "F"])).trim();
-        const sit = String(get(row, ["Situação da Popó", "Situação da Proposta", "E"])).trim();
-        const est = String(get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"])).trim();
-        const sup = String(get(row, ["SUPER COMERCIAL", "Super Comercial", "L"])).trim();
-        const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim().toLowerCase();
-        const cliente = String(get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"])).trim().toLowerCase();
+        const dep = String(getColumn(row, 'Dependência')).trim();
+        const sit = String(getColumn(row, 'Situação')).trim();
+        const est = String(getColumn(row, 'Estado')).trim();
+        const sup = String(getColumn(row, 'SuperComercial')).trim();
+        const proposta = String(getColumn(row, 'Proposta')).trim().toLowerCase();
+        const cliente = String(getColumn(row, 'Cliente')).trim().toLowerCase();
 
         if (depSel && dep !== depSel) return false;
         if (sitSel && sit !== sitSel) return false;
@@ -1136,7 +1164,7 @@
 
       cardQtd.textContent = filtered.length.toString();
       const soma = filtered.reduce((acc, row) => {
-        const v = get(row, ["VALOR TOTAL", "Valor Total", "I"]);
+        const v = getColumn(row, 'Valor');
         return acc + parseNumber(v);
       }, 0);
       cardValor.textContent = soma.toLocaleString("pt-BR", {
@@ -1146,8 +1174,32 @@
       cardRemovidas.textContent = removedProposals.length.toString();
     }
 
+    function getEvolutionInfo(proposta, currentSituacao) {
+      const hist = proposalHistory[proposta];
+      
+      if (!hist || hist.length === 0) {
+        return { type: 'nova', previousSituacao: null, currentSituacao };
+      }
+      
+      // Verifica se existe em versão anterior
+      const previousVersions = hist.filter(h => h.dsIndex < latestIndex);
+      
+      if (previousVersions.length === 0) {
+        return { type: 'nova', previousSituacao: null, currentSituacao };
+      }
+      
+      // Pega a situação da versão anterior mais recente
+      const lastPrevious = previousVersions.sort((a, b) => b.dsIndex - a.dsIndex)[0];
+      const previousSituacao = lastPrevious.situacao;
+      
+      if (previousSituacao !== currentSituacao && previousSituacao && currentSituacao) {
+        return { type: 'alterada', previousSituacao, currentSituacao };
+      }
+      
+      return { type: 'mantida', previousSituacao, currentSituacao };
+    }
+
     function renderTable(rows) {
-      // Cabeçalho normal
       tableHead.innerHTML = `
         <tr>
           <th class="px-3 py-3 text-left">Prefixo</th>
@@ -1175,21 +1227,32 @@
       }
       
       rows.forEach((row) => {
-        const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim();
-        const cliente = get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"]);
-        const prefixo = get(row, ["Prefixo", "PREFIXO", "A", "M"]);
-        const dep = get(row, ["DEPENDÊNCIA", "Dependência", "F"]);
-        const sit = get(row, ["Situação da Popó", "Situação da Proposta", "E"]);
-        const est = get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"]);
-        const sup = get(row, ["SUPER COMERCIAL", "Super Comercial", "L"]);
-        const valor = get(row, ["VALOR TOTAL", "Valor Total", "I"]);
+        const proposta = String(getColumn(row, 'Proposta')).trim();
+        const cliente = getColumn(row, 'Cliente');
+        const prefixo = getColumn(row, 'Prefixo');
+        const dep = getColumn(row, 'Dependência');
+        const sit = getColumn(row, 'Situação');
+        const est = getColumn(row, 'Estado');
+        const sup = getColumn(row, 'SuperComercial');
+        const valor = getColumn(row, 'Valor');
 
-        let evolucao = "Nova";
-        let evolClass = "text-white border-2 bg-green-600 border-green-700";
-        const hist = proposalHistory[proposta];
-        if (hist && hist.some(h => h.dsIndex < latestIndex)) {
-          evolucao = "Mantida";
-          evolClass = "text-amber-900 border-2 bg-amber-200 border-amber-400";
+        const evolution = getEvolutionInfo(proposta, sit);
+        let evolHTML = '';
+        
+        if (evolution.type === 'nova') {
+          evolHTML = `<span class="badge text-white border-2 bg-green-600 border-green-700">Nova</span>`;
+        } else if (evolution.type === 'alterada') {
+          evolHTML = `
+            <div class="evolution-badge">
+              <span class="text-[0.65rem] text-gray-600">Anterior: <strong>${evolution.previousSituacao || '-'}</strong></span>
+              <div class="evolution-arrow">
+                <i data-lucide="arrow-down" class="w-3 h-3 text-blue-600"></i>
+                <span class="text-blue-600">Atual: <strong>${evolution.currentSituacao || '-'}</strong></span>
+              </div>
+            </div>
+          `;
+        } else {
+          evolHTML = `<span class="badge text-amber-900 border-2 bg-amber-200 border-amber-400">Mantida</span>`;
         }
 
         const tr = document.createElement("tr");
@@ -1204,18 +1267,15 @@
           </td>
           <td class="px-3 py-2 font-semibold text-gray-700">${est || "-"}</td>
           <td class="px-3 py-2 font-semibold text-gray-700">${sup || "-"}</td>
-          <td class="px-3 py-2">
-            <span class="badge ${evolClass}">
-              ${evolucao}
-            </span>
-          </td>
+          <td class="px-3 py-2">${evolHTML}</td>
         `;
         tableBody.appendChild(tr);
       });
+      
+      lucide.createIcons();
     }
 
     function renderConsolidated(rows) {
-      // Cabeçalho consolidado
       tableHead.innerHTML = `
         <tr>
           <th class="px-3 py-3 text-left">Agência (Dependência)</th>
@@ -1223,6 +1283,7 @@
           <th class="px-3 py-3 text-right">Valor Total</th>
           <th class="px-3 py-3 text-center">Novas</th>
           <th class="px-3 py-3 text-center">Mantidas</th>
+          <th class="px-3 py-3 text-center">Alteradas</th>
         </tr>
       `;
 
@@ -1231,7 +1292,7 @@
       if (!rows.length) {
         tableBody.innerHTML = `
           <tr>
-            <td colspan="5" class="py-6 px-3 text-center text-gray-600 text-sm font-bold">
+            <td colspan="6" class="py-6 px-3 text-center text-gray-600 text-sm font-bold">
               Nenhuma proposta encontrada com os filtros aplicados.
             </td>
           </tr>`;
@@ -1241,22 +1302,25 @@
       const consolidated = {};
       
       rows.forEach((row) => {
-        const dep = get(row, ["DEPENDÊNCIA", "Dependência", "F"]) || "Sem identificação";
-        const valor = parseNumber(get(row, ["VALOR TOTAL", "Valor Total", "I"]));
-        const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim();
+        const dep = getColumn(row, 'Dependência') || "Sem identificação";
+        const valor = parseNumber(getColumn(row, 'Valor'));
+        const proposta = String(getColumn(row, 'Proposta')).trim();
+        const sit = getColumn(row, 'Situação');
         
         if (!consolidated[dep]) {
-          consolidated[dep] = { qtd: 0, valor: 0, novas: 0, mantidas: 0 };
+          consolidated[dep] = { qtd: 0, valor: 0, novas: 0, mantidas: 0, alteradas: 0 };
         }
         
         consolidated[dep].qtd += 1;
         consolidated[dep].valor += valor;
         
-        const hist = proposalHistory[proposta];
-        if (hist && hist.some(h => h.dsIndex < latestIndex)) {
-          consolidated[dep].mantidas += 1;
-        } else {
+        const evolution = getEvolutionInfo(proposta, sit);
+        if (evolution.type === 'nova') {
           consolidated[dep].novas += 1;
+        } else if (evolution.type === 'alterada') {
+          consolidated[dep].alteradas += 1;
+        } else {
+          consolidated[dep].mantidas += 1;
         }
       });
 
@@ -1284,6 +1348,11 @@
                 ${data.mantidas}
               </span>
             </td>
+            <td class="px-3 py-2 text-center">
+              <span class="badge text-blue-900 border-2 bg-blue-200 border-blue-400">
+                ${data.alteradas}
+              </span>
+            </td>
           `;
           tableBody.appendChild(tr);
         });
@@ -1293,8 +1362,8 @@
       agenciaBody.innerHTML = "";
       const mapa = {};
       rows.forEach((row) => {
-        const dep = get(row, ["DEPENDÊNCIA", "Dependência", "F"]) || "Sem identificação";
-        const val = parseNumber(get(row, ["VALOR TOTAL", "Valor Total", "I"]));
+        const dep = getColumn(row, 'Dependência') || "Sem identificação";
+        const val = parseNumber(getColumn(row, 'Valor'));
         if (!mapa[dep]) mapa[dep] = { qtd: 0, soma: 0 };
         mapa[dep].qtd += 1;
         mapa[dep].soma += val;
@@ -1342,8 +1411,8 @@
       const situacoes = new Set();
       
       rows.forEach((row) => {
-        const dep = get(row, ["DEPENDÊNCIA", "Dependência", "F"]) || "Sem identificação";
-        const sit = String(get(row, ["Situação da Popó", "Situação da Proposta", "E"])).trim() || "Sem situação";
+        const dep = getColumn(row, 'Dependência') || "Sem identificação";
+        const sit = String(getColumn(row, 'Situação')).trim() || "Sem situação";
         
         situacoes.add(sit);
         
@@ -1352,9 +1421,7 @@
         matrix[dep][sit] += 1;
       });
 
-      const situacoesArray = Array.from(situacoes).sort((a, b) => 
-        a.localeCompare(b, "pt-BR", { sensitivity: "base" })
-      );
+      const situacoesArray = Array.from(situacoes).sort();
 
       let headHtml = "<tr><th class='py-2 px-3 text-left'>Agência</th>";
       situacoesArray.forEach(sit => {
@@ -1364,7 +1431,7 @@
       situacaoPorAgenciaHead.innerHTML = headHtml;
 
       Object.entries(matrix)
-        .sort(([a], [b]) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }))
+        .sort(([a], [b]) => a.localeCompare(b))
         .forEach(([dep, sits]) => {
           let total = 0;
           let rowHtml = `<tr><td class="py-2 px-3 font-black text-gray-800">${dep}</td>`;
@@ -1386,10 +1453,10 @@
       removidasBody.innerHTML = "";
 
       const filtradas = removedProposals.filter(({ row }) => {
-        const dep = String(get(row, ["DEPENDÊNCIA", "Dependência", "F"])).trim();
-        const sit = String(get(row, ["Situação da Popó", "Situação da Proposta", "E"])).trim();
-        const est = String(get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"])).trim();
-        const sup = String(get(row, ["SUPER COMERCIAL", "Super Comercial", "L"])).trim();
+        const dep = String(getColumn(row, 'Dependência')).trim();
+        const sit = String(getColumn(row, 'Situação')).trim();
+        const est = String(getColumn(row, 'Estado')).trim();
+        const sup = String(getColumn(row, 'SuperComercial')).trim();
 
         if (depSel && dep !== depSel) return false;
         if (sitSel && sit !== sitSel) return false;
@@ -1399,9 +1466,9 @@
       });
 
       filtradas.slice(0, 150).forEach(({ proposta, row }) => {
-        const cliente = get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"]);
-        const dep = get(row, ["DEPENDÊNCIA", "Dependência", "F"]);
-        const val = get(row, ["VALOR TOTAL", "Valor Total", "I"]);
+        const cliente = getColumn(row, 'Cliente');
+        const dep = getColumn(row, 'Dependência');
+        const val = getColumn(row, 'Valor');
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td class="py-2 px-3 text-red-700 font-black">${proposta}</td>
@@ -1432,12 +1499,12 @@
 
       datasets.forEach((ds, idx) => {
         (ds.rows || []).forEach((row) => {
-          const dep = String(get(row, ["DEPENDÊNCIA", "Dependência", "F"])).trim();
-          const sit = String(get(row, ["Situação da Popó", "Situação da Proposta", "E"])).trim() || "Sem situação";
-          const est = String(get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"])).trim();
-          const sup = String(get(row, ["SUPER COMERCIAL", "Super Comercial", "L"])).trim();
-          const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim().toLowerCase();
-          const cliente = String(get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"])).trim().toLowerCase();
+          const dep = String(getColumn(row, 'Dependência')).trim();
+          const sit = String(getColumn(row, 'Situação')).trim() || "Sem situação";
+          const est = String(getColumn(row, 'Estado')).trim();
+          const sup = String(getColumn(row, 'SuperComercial')).trim();
+          const proposta = String(getColumn(row, 'Proposta')).trim().toLowerCase();
+          const cliente = String(getColumn(row, 'Cliente')).trim().toLowerCase();
 
           if (depSel && dep !== depSel) return;
           if (sitSel && sit !== sitSel) return;
@@ -1453,9 +1520,7 @@
         });
       });
 
-      const situacoes = Object.keys(situacaoMap).sort((a, b) =>
-        a.localeCompare(b, "pt-BR", { sensitivity: "base" })
-      );
+      const situacoes = Object.keys(situacaoMap).sort();
 
       let headHtml = "<tr><th class='py-2 px-3 text-left'>Situação</th>";
       datasets.forEach((ds, idx) => {
@@ -1508,6 +1573,7 @@
     function resetUI() {
       latestIndex = -1;
       latestRows = [];
+      columnMapping = {};
       tableBody.innerHTML = "";
       agenciaBody.innerHTML = "";
       situacaoPorAgenciaHead.innerHTML = "";
@@ -1525,7 +1591,6 @@
     btnExportCSV.addEventListener("click", () => {
       if (latestIndex < 0 || !latestRows || !latestRows.length) return;
 
-      // Aplicar mesmos filtros
       const depSel = filterDependencia.value.trim();
       const sitSel = filterSituacao.value.trim();
       const estSel = filterEstado.value.trim();
@@ -1535,12 +1600,12 @@
       const agenciaEspecifica = filterAgenciaEspecifica.value.trim();
 
       const filtered = latestRows.filter((row) => {
-        const dep = String(get(row, ["DEPENDÊNCIA", "Dependência", "F"])).trim();
-        const sit = String(get(row, ["Situação da Popó", "Situação da Proposta", "E"])).trim();
-        const est = String(get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"])).trim();
-        const sup = String(get(row, ["SUPER COMERCIAL", "Super Comercial", "L"])).trim();
-        const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim().toLowerCase();
-        const cliente = String(get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"])).trim().toLowerCase();
+        const dep = String(getColumn(row, 'Dependência')).trim();
+        const sit = String(getColumn(row, 'Situação')).trim();
+        const est = String(getColumn(row, 'Estado')).trim();
+        const sup = String(getColumn(row, 'SuperComercial')).trim();
+        const proposta = String(getColumn(row, 'Proposta')).trim().toLowerCase();
+        const cliente = String(getColumn(row, 'Cliente')).trim().toLowerCase();
 
         if (depSel && dep !== depSel) return false;
         if (sitSel && sit !== sitSel) return false;
@@ -1557,27 +1622,30 @@
       let lines = [];
 
       if (mode === 'consolidated') {
-        const header = ["Agência", "Quantidade", "Valor Total", "Novas", "Mantidas"];
+        const header = ["Agência", "Quantidade", "Valor Total", "Novas", "Mantidas", "Alteradas"];
         lines.push(header.join(";"));
 
         const consolidated = {};
         filtered.forEach((row) => {
-          const dep = get(row, ["DEPENDÊNCIA", "Dependência", "F"]) || "Sem identificação";
-          const valor = parseNumber(get(row, ["VALOR TOTAL", "Valor Total", "I"]));
-          const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim();
+          const dep = getColumn(row, 'Dependência') || "Sem identificação";
+          const valor = parseNumber(getColumn(row, 'Valor'));
+          const proposta = String(getColumn(row, 'Proposta')).trim();
+          const sit = getColumn(row, 'Situação');
           
           if (!consolidated[dep]) {
-            consolidated[dep] = { qtd: 0, valor: 0, novas: 0, mantidas: 0 };
+            consolidated[dep] = { qtd: 0, valor: 0, novas: 0, mantidas: 0, alteradas: 0 };
           }
           
           consolidated[dep].qtd += 1;
           consolidated[dep].valor += valor;
           
-          const hist = proposalHistory[proposta];
-          if (hist && hist.some(h => h.dsIndex < latestIndex)) {
-            consolidated[dep].mantidas += 1;
-          } else {
+          const evolution = getEvolutionInfo(proposta, sit);
+          if (evolution.type === 'nova') {
             consolidated[dep].novas += 1;
+          } else if (evolution.type === 'alterada') {
+            consolidated[dep].alteradas += 1;
+          } else {
+            consolidated[dep].mantidas += 1;
           }
         });
 
@@ -1589,7 +1657,8 @@
               data.qtd,
               data.valor.toString().replace(".", ","),
               data.novas,
-              data.mantidas
+              data.mantidas,
+              data.alteradas
             ].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`);
             lines.push(values.join(";"));
           });
@@ -1597,34 +1666,46 @@
         const header = [
           "Prefixo",
           "Proposta",
-          "Nome do Cliente",
-          "Situação da Proposta",
+          "Cliente",
+          "Situação Atual",
           "Dependência",
           "Valor Total",
-          "Estado da Solicitação",
+          "Estado",
           "Super Comercial",
-          "Evolução"
+          "Tipo Evolução",
+          "Situação Anterior"
         ];
         lines.push(header.join(";"));
 
         filtered.forEach((row) => {
-          const proposta = String(get(row, ["Proposta", "PROPOSTA", "C"])).trim();
-          const hist = proposalHistory[proposta];
-          let evolucao = "Nova na última versão";
-          if (hist && hist.some(h => h.dsIndex < latestIndex)) {
-            evolucao = "Mantida (já existia antes)";
+          const proposta = String(getColumn(row, 'Proposta')).trim();
+          const sit = getColumn(row, 'Situação');
+          const evolution = getEvolutionInfo(proposta, sit);
+          
+          let tipoEvolucao = '';
+          let sitAnterior = '';
+          
+          if (evolution.type === 'nova') {
+            tipoEvolucao = 'Nova';
+          } else if (evolution.type === 'alterada') {
+            tipoEvolucao = 'Alterada';
+            sitAnterior = evolution.previousSituacao || '';
+          } else {
+            tipoEvolucao = 'Mantida';
+            sitAnterior = evolution.previousSituacao || sit;
           }
 
           const values = [
-            get(row, ["Prefixo", "PREFIXO", "A", "M"]),
+            getColumn(row, 'Prefixo'),
             proposta,
-            get(row, ["Nome do Cliente", "NOME DO CLIENTE", "D"]),
-            get(row, ["Situação da Popó", "Situação da Proposta", "E"]),
-            get(row, ["DEPENDÊNCIA", "Dependência", "F"]),
-            parseNumber(get(row, ["VALOR TOTAL", "Valor Total", "I"])).toString().replace(".", ","),
-            get(row, ["ESTADO DA SOLICITAÇÃO", "Estado da Solicitação", "K"]),
-            get(row, ["SUPER COMERCIAL", "Super Comercial", "L"]),
-            evolucao
+            getColumn(row, 'Cliente'),
+            sit,
+            getColumn(row, 'Dependência'),
+            parseNumber(getColumn(row, 'Valor')).toString().replace(".", ","),
+            getColumn(row, 'Estado'),
+            getColumn(row, 'SuperComercial'),
+            tipoEvolucao,
+            sitAnterior
           ].map((v) =>
             `"${String(v ?? "").replace(/"/g, '""')}"`
           );
